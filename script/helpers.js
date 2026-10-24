@@ -1,4 +1,8 @@
 const fs = require('fs');
+const path = require('path');
+
+// Thư mục gốc dự án (cha của thư mục script/), nơi chứa index.html, style.css...
+const ROOT_DIR = path.join(__dirname, '..');
 
 class HttpError extends Error {
   constructor(status, message) {
@@ -18,7 +22,7 @@ function sendJson(res, status, data) {
 }
 
 function sendFile(res, filePath, contentType) {
-  fs.readFile(filePath, (err, data) => {
+  fs.readFile(path.join(ROOT_DIR, filePath), (err, data) => {
     if (err) return sendText(res, 404, 'File not found');
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(data);
