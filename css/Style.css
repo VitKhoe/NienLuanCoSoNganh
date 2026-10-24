@@ -1,0 +1,540 @@
+/* =========================================================
+   1. THIẾT LẬP CHUNG
+   ========================================================= */
+:root {
+  --blue: #0d6efd;
+  --green: #198754;
+  --gray: #6c757d;
+  --light: #f8f9fa;
+  --dark: #212529;
+  --border: #dee2e6;
+  --radius: 12px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--dark);
+  background: #fff;
+  line-height: 1.5;
+}
+
+body.modal-open {
+  overflow: hidden;
+}
+
+.container {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.time-font {
+  font-family: "Times New Roman", serif;
+}
+
+.text-muted {
+  color: var(--gray);
+}
+
+.empty-text {
+  color: var(--gray);
+  text-align: center;
+  margin: 24px 0;
+}
+
+/* =========================================================
+   2. THANH ĐIỀU HƯỚNG
+   ========================================================= */
+.navbar {
+  background: var(--blue);
+}
+
+.navbar-inner {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.navbar-brand {
+  font-family: "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  text-decoration: none;
+}
+
+.navbar-menu {
+  display: flex;
+  gap: 4px;
+  list-style: none;
+  margin: 0 0 0 auto;
+  padding: 0;
+}
+
+.nav-link {
+  display: block;
+  padding: 8px 12px;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-link:hover {
+  opacity: 0.8;
+}
+
+.navbar-toggle {
+  display: none;
+  margin-left: auto;
+  padding: 2px 10px;
+  font-size: 20px;
+  color: #fff;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .navbar-toggle {
+    display: block;
+  }
+
+  .navbar-menu {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    margin: 8px 0 0;
+  }
+
+  .navbar-menu.is-open {
+    display: flex;
+  }
+}
+
+/* =========================================================
+   3. DANH SÁCH BÀI VIẾT / TIN TUYỂN DỤNG
+   ========================================================= */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card-body {
+  padding: 16px;
+}
+
+/* --- Bài viết --- */
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  background: var(--blue);
+  border-radius: 50%;
+}
+
+.post-author {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.post-header small {
+  font-size: 0.8rem;
+}
+
+.post-content {
+  margin: 0 0 8px;
+  white-space: pre-line;
+}
+
+.post-image {
+  margin-top: 8px;
+  background: var(--light);
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+}
+
+.post-image img {
+  display: block;
+  width: 100%;
+  max-height: 450px;
+  object-fit: cover;
+}
+
+/* --- Tin tuyển dụng --- */
+.card-job {
+  border-left: 4px solid var(--green);
+}
+
+.job-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--green);
+  background: #d1e7dd;
+  border-radius: 6px;
+}
+
+.job-title {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.job-project {
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  color: var(--gray);
+}
+
+.job-requirements {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: var(--light);
+  border-radius: 8px;
+}
+
+.job-requirements strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--gray);
+}
+
+.job-requirements p {
+  margin: 0;
+  white-space: pre-line;
+}
+
+/* --- Trạng thái tải --- */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: var(--gray);
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 4px solid #cfe2ff;
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.alert {
+  padding: 12px 16px;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.alert-danger {
+  color: #842029;
+  background: #f8d7da;
+}
+
+/* =========================================================
+   4. NÚT BẤM
+   ========================================================= */
+.btn {
+  display: inline-block;
+  padding: 8px 20px;
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn:hover {
+  opacity: 0.88;
+}
+
+.btn-sm {
+  padding: 4px 14px;
+  font-size: 0.875rem;
+}
+
+.btn-primary {
+  color: #fff;
+  background: var(--blue);
+}
+
+.btn-success {
+  color: #fff;
+  background: var(--green);
+}
+
+.btn-secondary {
+  color: #fff;
+  background: var(--gray);
+}
+
+.btn-outline-success {
+  color: var(--green);
+  background: transparent;
+  border-color: var(--green);
+}
+
+.btn-outline-success:hover {
+  color: #fff;
+  background: var(--green);
+  opacity: 1;
+}
+
+/* =========================================================
+   5. NÚT TRÒN (+) GÓC PHẢI DƯỚI
+   ========================================================= */
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* Mặc định ẩn danh sách tùy chọn */
+.fab-options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(15px);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover (hoặc focus bằng bàn phím/chạm) thì hiện */
+.fab:hover .fab-options,
+.fab:focus-within .fab-options {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.fab-option {
+  padding: 8px 16px;
+  font: inherit;
+  font-weight: 600;
+  background: var(--light);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.fab-main {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--blue);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.fab-main svg {
+  transition: transform 0.25s ease-in-out;
+}
+
+/* Xoay dấu + thành dấu x khi hover */
+.fab:hover .fab-main svg {
+  transform: rotate(45deg);
+}
+
+/* =========================================================
+   6. MODAL
+   ========================================================= */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal.is-open {
+  display: flex;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 500px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.modal-lg {
+  max-width: 800px;
+}
+
+.modal-header,
+.modal-footer {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--light);
+}
+
+.modal-header {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-footer {
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--green);
+}
+
+.modal-close {
+  font-size: 28px;
+  line-height: 1;
+  color: var(--gray);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+/* =========================================================
+   7. FORM
+   ========================================================= */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  font: inherit;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.2);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-divider {
+  margin: 24px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.section-title {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.section-title-project {
+  color: var(--blue);
+}
+
+.section-title-job {
+  color: var(--green);
+}
+
+.required {
+  color: #dc3545;
+}

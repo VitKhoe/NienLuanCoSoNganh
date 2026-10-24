@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My First Node.js App</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    <!-- Bootstrap: tạm tắt, sau này dùng lại thì bỏ comment 2 dòng dưới -->
+    <!-- <link rel="stylesheet" href="/bootstrap.min.css"> -->
+    <!-- <script src="/bootstrap.bundle.js"></script> -->
+  </head>
+  <body>
+
+    <!-- ===== Thanh điều hướng ===== -->
+    <nav class="navbar">
+      <div class="container navbar-inner">
+        <a class="navbar-brand" href="#">Switch</a>
+
+        <button class="navbar-toggle" id="menuToggle" type="button"
+          aria-label="Mở menu">☰</button>
+
+        <ul class="navbar-menu" id="menu">
+          <li><a class="nav-link time-font" href="#">Trang chủ</a></li>
+          <li><a class="nav-link time-font" href="#services">Dịch vụ</a></li>
+          <li><a class="nav-link time-font" href="#about">Về chúng tôi</a></li>
+          <li><a class="nav-link time-font" href="#contact">Liên hệ</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnLogout">Đăng xuất</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnAccount">Tài khoản</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- ===== Nội dung chính (dữ liệu được load động bằng JS) ===== -->
+    <main class="container">
+      <section id="recruitmentContainer" class="feed"></section>
+      <section id="postContainer" class="feed"></section>
+    </main>
+
+    <!-- ===== Nút tròn (+) mở menu tạo mới ===== -->
+    <div class="fab">
+      <div class="fab-options">
+        <button type="button" class="fab-option" data-modal-open="createPostModal">
+          Tạo bài viết
+        </button>
+        <button type="button" class="fab-option" data-modal-open="createProjectModal">
+          Tạo dự án
+        </button>
+      </div>
+
+      <button type="button" class="fab-main" aria-label="Tạo mới">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28"
+          fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- ===== Modal tạo bài viết (bảng Post) ===== -->
+    <div class="modal" id="createPostModal" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h5 class="modal-title">Tạo bài viết</h5>
+          <button type="button" class="modal-close" data-modal-close
+            aria-label="Đóng">&times;</button>
+        </div>
+
+        <form id="formCreatePost">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="noiDung">Nội dung <span class="required">*</span></label>
+              <textarea id="noiDung" rows="4" placeholder="Bạn đang nghĩ gì?"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="hinhAnhUrl">Hình ảnh</label>
+              <input type="file" id="hinhAnhUrl" accept="image/*">
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Hủy</button>
+            <button type="submit" class="btn btn-primary">Đăng bài</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ===== Modal tạo dự án + tin tuyển dụng (bảng DuAn, TinTuyenDung) ===== -->
+    <div class="modal" id="createProjectModal" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <h5 class="modal-title">Tạo dự án &amp; Tin tuyển dụng</h5>
+          <button type="button" class="modal-close" data-modal-close
+            aria-label="Đóng">&times;</button>
+        </div>
+
+        <form id="formCreateProject">
+          <div class="modal-body">
+
+            <h6 class="section-title section-title-project">1. Thông tin dự án</h6>
+
+            <div class="form-group">
+              <label for="tenDuAn">Tên dự án <span class="required">*</span></label>
+              <input type="text" id="tenDuAn"
+                placeholder="VD: Phân loại ảnh X-quang COVID-19" required>
+            </div>
+
+            <div class="form-group">
+              <label for="moTa">Mô tả dự án</label>
+              <textarea id="moTa" rows="2" placeholder="Mô tả mục tiêu dự án..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ngayBD">Ngày bắt đầu</label>
+                <input type="date" id="ngayBD">
+              </div>
+              <div class="form-group">
+                <label for="ngayKT">Ngày kết thúc</label>
+                <input type="date" id="ngayKT">
+              </div>
+              <div class="form-group">
+                <label for="trangThai">Trạng thái <span class="required">*</span></label>
+                <select id="trangThai">
+                  <option value="Chưa bắt đầu" selected>Chưa bắt đầu</option>
+                  <option value="Đang thực hiện">Đang thực hiện</option>
+                  <option value="Hoàn thành">Hoàn thành</option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <h6 class="section-title section-title-job">
+              2. Thông tin tin tuyển dụng (Đăng đồng thời lên tường)
+            </h6>
+
+            <div class="form-group">
+              <label for="tieuDeTuyenDung">Tiêu đề tin tuyển dụng</label>
+              <input type="text" id="tieuDeTuyenDung"
+                placeholder="Để trống sẽ tự động lấy theo tên dự án">
+            </div>
+
+            <div class="form-group">
+              <label for="yeuCauTuyenDung">Yêu cầu ứng viên</label>
+              <textarea id="yeuCauTuyenDung" rows="2"
+                placeholder="VD: Yêu cầu biết PyTorch, Python, kinh nghiệm xử lý ảnh..."></textarea>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Hủy</button>
+            <button type="submit" class="btn btn-success">Tạo dự án &amp; Đăng tin</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/script/main.js"></script>
+  </body>
+</html>

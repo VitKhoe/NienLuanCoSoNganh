@@ -1,36 +1,12 @@
-const db = require('./db');
-const { HttpError, sendText, sendJson, sendFile, readJson } = require('./helpers');
+import db from './db.js';
+import { HttpError, sendJson, readJson } from './helpers.js';
+import { requireUser } from './session.js';
 
-const ID_USER_TAM = 1; // TODO: lấy từ session/token
-
-// ---------- Tài khoản ----------
-async function login(req, res) {
-  const { email, password } = await readJson(req);
-
-  const [rows] = await db.query(
-    'SELECT * FROM user WHERE email = ? AND pWD = ?',
-    [email, password]
-  );
-
-  if (rows.length === 0) {
-    return sendText(res, 401, 'Sai email hoặc mật khẩu');
-  }
-  console.log('Đăng nhập thành công');
-  sendFile(res, 'index.html', 'text/html; charset=utf-8');
-}
-
-async function signup(req, res) {
-  const { username, email, password } = await readJson(req);
-
-  await db.query(
-    'INSERT INTO user (username, email, pWD) VALUES (?, ?, ?)',
-    [username, email, password]
-  );
-  sendText(res, 201, 'Đăng ký thành công');
-}
+// (Đăng ký / đăng nhập đã chuyển sang users.js)
 
 // ---------- Dự án + tin tuyển dụng ----------
-async function createProject(req, res) {
+export async function createProject(req, res) {
+  const idUser = requireUser(req); // người đang đăng nhập
   const data = await readJson(req);
   const { tenDuAn, trangThai } = data;
   const moTa = data.moTa || null;
@@ -50,13 +26,13 @@ async function createProject(req, res) {
     const [duAn] = await db.query(
       `INSERT INTO DuAn (idUserTao, tenDuAn, moTa, ngayBD, ngayKT, trangThai)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [ID_USER_TAM, tenDuAn, moTa, ngayBD, ngayKT, trangThai]
+      [idUser, tenDuAn, moTa, ngayBD, ngayKT, trangThai]
     );
 
     const [tin] = await db.query(
       `INSERT INTO TinTuyenDung (idUser, idDuAN, tieuDe, yeuCau, hanNop, trangThai)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [ID_USER_TAM, duAn.insertId, tieuDe, yeuCau, ngayKT, 'Đang tuyển']
+      [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, 'Đang tuyển']
     );
 
     await db.commit();
@@ -71,7 +47,7 @@ async function createProject(req, res) {
   }
 }
 
-async function getJobs(req, res) {
+export async function getJobs(req, res) {
   const [rows] = await db.query(
     `SELECT t.idTinTuyen, t.idUser, t.idDuAN, t.tieuDe, t.yeuCau,
             t.hanNop, t.trangThai, d.tenDuAn
@@ -83,7 +59,8 @@ async function getJobs(req, res) {
 }
 
 // ---------- Bài viết ----------
-async function createPost(req, res) {
+export async function createPost(req, res) {
+  const idUser = requireUser(req); // người đang đăng nhập
   const { noiDung, hinhAnhUrl } = await readJson(req);
 
   if (!noiDung) {
@@ -92,16 +69,14 @@ async function createPost(req, res) {
 
   const [result] = await db.query(
     'INSERT INTO Post (idUser, noiDung, hinhAnhUrl, createdAt) VALUES (?, ?, ?, NOW())',
-    [ID_USER_TAM, noiDung, hinhAnhUrl || null]
+    [idUser, noiDung, hinhAnhUrl || null]
   );
   sendJson(res, 201, { message: 'Đăng bài viết thành công', idPost: result.insertId });
 }
 
-async function getPosts(req, res) {
+export async function getPosts(req, res) {
   const [rows] = await db.query(
     'SELECT idPost, idUser, noiDung, hinhAnhUrl, createdAt FROM Post ORDER BY createdAt DESC'
   );
   sendJson(res, 200, rows);
 }
-
-module.exports = { login, signup, createProject, getJobs, createPost, getPosts };

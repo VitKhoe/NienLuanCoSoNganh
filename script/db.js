@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+import mysql from 'mysql2';
 
 const connection = mysql.createConnection({
   host: process.env.DB_HOST || 'localhost',
@@ -17,4 +17,4 @@ connection.connect((err) => {
 });
 
 // Dùng dạng promise để viết async/await cho gọn
-module.exports = connection.promise();
+export default connection.promise();
