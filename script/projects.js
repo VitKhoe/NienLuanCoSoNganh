@@ -32,7 +32,7 @@ export function initProjectForm() {
       tieuDeTuyenDung: getValue('tieuDeTuyenDung'),
       yeuCauTuyenDung: getValue('yeuCauTuyenDung')
     };
-
+    console.log('Dữ liệu gửi đi:', payload);
     try {
       await createProject(payload);
       alert('Tạo dự án và đăng tin tuyển dụng thành công!');

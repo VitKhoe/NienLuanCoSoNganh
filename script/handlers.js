@@ -8,6 +8,7 @@ import { requireUser } from './session.js';
 export async function createProject(req, res) {
   const idUser = requireUser(req); // người đang đăng nhập
   const data = await readJson(req);
+  // console.log('Dữ liệu nhận được từ client:', data);
   const { tenDuAn, trangThai } = data;
   const moTa = data.moTa || null;
   const ngayBD = data.ngayBD || null;
@@ -21,19 +22,25 @@ export async function createProject(req, res) {
   const yeuCau = data.yeuCauTuyenDung || moTa || `Yêu cầu có chuyên môn phù hợp với dự án ${tenDuAn}.`;
 
   // Transaction: tạo dự án và tin tuyển dụng, lỗi bước nào thì hủy cả hai
-  await db.beginTransaction();
+  // await db.beginTransaction();
+  // const [rows] = await db.query(
+  // "SHOW CREATE TABLE tintuyendung"
+  // );
+
+  // console.log(rows);
   try {
     const [duAn] = await db.query(
       `INSERT INTO DuAn (idUserTao, tenDuAn, moTa, ngayBD, ngayKT, trangThai)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [idUser, tenDuAn, moTa, ngayBD, ngayKT, trangThai]
     );
-
+    console.log('Dự án đã được tạo với id:', duAn.insertId);
     const [tin] = await db.query(
       `INSERT INTO TinTuyenDung (idUser, idDuAN, tieuDe, yeuCau, hanNop, trangThai)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, 'Đang tuyển']
+      [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, trangThai]
     );
+    
 
     await db.commit();
     sendJson(res, 201, {
@@ -49,7 +56,7 @@ export async function createProject(req, res) {
 
 export async function getJobs(req, res) {
   const [rows] = await db.query(
-    `SELECT t.idTinTuyen, t.idUser, t.idDuAN, t.tieuDe, t.yeuCau,
+    `SELECT t.idTinTuyen, t.idUser, t.idDuAn, t.tieuDe, t.yeuCau,
             t.hanNop, t.trangThai, d.tenDuAn
      FROM TinTuyenDung t
      LEFT JOIN DuAn d ON t.idDuAN = d.idDuAn

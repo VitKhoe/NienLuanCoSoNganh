@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Đăng nhập / Đăng ký</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/account.css">
+  </head>
+  <body class="auth-page">
+
+    <main class="card auth-card">
+      <div class="card-body">
+        <h1 class="auth-brand time-font">Switch</h1>
+
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab is-active" data-tab="login">Đăng nhập</button>
+          <button type="button" class="auth-tab" data-tab="signup">Đăng ký</button>
+        </div>
+
+        <!-- Thông báo lỗi / thành công -->
+        <p id="authMessage" class="message" hidden></p>
+
+        <!-- ===== Đăng nhập ===== -->
+        <form id="formLogin">
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Mật khẩu</label>
+            <input type="password" id="loginPassword" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+        </form>
+
+        <!-- ===== Đăng ký ===== -->
+        <form id="formSignup" hidden>
+          <div class="form-group">
+            <label for="signupUsername">Tên đăng nhập</label>
+            <input type="text" id="signupUsername" minlength="3" maxlength="50"
+              autocomplete="username" required>
+          </div>
+          <div class="form-group">
+            <label for="signupEmail">Email</label>
+            <input type="email" id="signupEmail" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="signupPassword">Mật khẩu (từ 6 ký tự)</label>
+            <input type="password" id="signupPassword" minlength="6" maxlength="128"
+              autocomplete="new-password" required>
+          </div>
+          <div class="form-group">
+            <label for="signupConfirm">Nhập lại mật khẩu</label>
+            <input type="password" id="signupConfirm" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="btn btn-success btn-block">Tạo tài khoản</button>
+        </form>
+      </div>
+    </main>
+
+    <script type="module" src="/script/login.js"></script>
+  </body>
+</html>

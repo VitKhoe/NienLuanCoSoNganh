@@ -25,6 +25,16 @@ export function formatDate(value) {
   return new Date(value).toLocaleDateString('vi-VN');
 }
 
+// ---------- Thông báo trong trang ----------
+
+// Hiện thông báo vào một thẻ (type: 'error' hoặc 'success'); text rỗng thì ẩn đi
+export function showMessage(element, text, type = 'error') {
+  if (!element) return;
+  element.textContent = text;
+  element.className = `message message-${type}`;
+  element.hidden = !text;
+}
+
 // ---------- Modal ----------
 
 export function openModal(id) {

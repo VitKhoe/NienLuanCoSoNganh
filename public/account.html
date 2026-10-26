@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tài khoản</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/account.css">
+  </head>
+  <body>
+
+    <!-- ===== Thanh điều hướng ===== -->
+    <nav class="navbar">
+      <div class="container navbar-inner">
+        <a class="navbar-brand" href="/">Switch</a>
+
+        <button class="navbar-toggle" id="menuToggle" type="button"
+          aria-label="Mở menu">☰</button>
+
+        <ul class="navbar-menu" id="menu">
+          <li><a class="nav-link time-font" href="/">Trang chủ</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnLogout">Đăng xuất</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnAccount">Tài khoản</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="container account-layout">
+
+      <!-- ===== Hồ sơ cá nhân ===== -->
+      <section class="card">
+        <div class="card-body">
+          <h2 class="card-title">Hồ sơ cá nhân</h2>
+
+          <div class="profile-head">
+            <div class="avatar-lg" id="avatarPreview">?</div>
+            <div>
+              <h3 class="profile-name" id="profileUserName"></h3>
+              <small class="text-muted" id="profileEmail"></small>
+            </div>
+          </div>
+
+          <p id="profileMessage" class="message" hidden></p>
+
+          <form id="formProfile">
+            <div class="form-group">
+              <label for="HovaTen">Họ và tên <span class="required">*</span></label>
+              <input type="text" id="HovaTen" maxlength="255" required>
+            </div>
+            <div class="form-group">
+              <label for="avatar">Ảnh đại diện (đường dẫn ảnh)</label>
+              <input type="text" id="avatar" maxlength="500" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label for="SDT">Số điện thoại</label>
+              <input type="text" id="SDT" maxlength="20" placeholder="VD: 0901234567">
+            </div>
+            <div class="form-group">
+              <label for="tieuSu">Tiểu sử</label>
+              <textarea id="tieuSu" rows="4" maxlength="2000"
+                placeholder="Giới thiệu ngắn về bạn..."></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Lưu hồ sơ</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ===== Kỹ năng chuyên môn ===== -->
+      <section class="card">
+        <div class="card-body">
+          <h2 class="card-title">Kỹ năng chuyên môn</h2>
+
+          <p id="skillMessage" class="message" hidden></p>
+
+          <ul id="skillList" class="skill-list"></ul>
+
+          <form id="formSkill">
+            <div class="skill-form-row">
+              <div class="form-group">
+                <label for="tenKyNang">Kỹ năng <span class="required">*</span></label>
+                <input type="text" id="tenKyNang" maxlength="100"
+                  placeholder="VD: Figma, Python..." required>
+              </div>
+              <div class="form-group">
+                <label for="trinhDo">Trình độ</label>
+                <select id="trinhDo">
+                  <option value="Beginner">Cơ bản</option>
+                  <option value="Intermediate">Trung cấp</option>
+                  <option value="Expert">Thành thạo</option>
+                  <option value="Master">Chuyên gia</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="soNamKinhNghiem">Số năm kinh nghiệm</label>
+                <input type="number" id="soNamKinhNghiem" min="0" max="60" step="1" value="0">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="btnCancelSkill" hidden>Hủy sửa</button>
+              <button type="submit" class="btn btn-success" id="btnSaveSkill">Thêm kỹ năng</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+
+    <script type="module" src="/script/account.js"></script>
+  </body>
+</html>
