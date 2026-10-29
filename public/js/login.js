@@ -1,4 +1,4 @@
-// Trang đăng nhập / đăng ký (public/login_signup.html)
+// Trang đăng nhập / đăng ký (views/login_signup.html)
 
 import { login, signup, fetchMe, ApiError } from './api.js';
 import { showMessage } from './ui.js';

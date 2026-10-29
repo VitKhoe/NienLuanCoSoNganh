@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

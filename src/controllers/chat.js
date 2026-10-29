@@ -6,11 +6,11 @@
 //   (nhờ vậy hai người luôn dùng chung một cuộc trò chuyện), còn tên nhóm không được trùng nhau.
 // - Server dùng HTTP thuần nên nhận tin mới bằng cách hỏi lại định kỳ (polling) với ?after=<idMessage>.
 
-import db from './db.js';
-import { HttpError, sendJson } from './helpers.js';
-import { requireUser } from './session.js';
+import db from '../models/db.js';
+import { HttpError, sendJson } from '../utils/helpers.js';
+import { requireUser } from '../utils/session.js';
 import { assertActiveUser, getFriendIds } from './connections.js';
-import { readObject, cleanString, toId, parseLimit, parseCursor } from './validate.js';
+import { readObject, cleanString, toId, parseLimit, parseCursor } from '../utils/validate.js';
 
 const PRIVATE_PREFIX = 'private:';
 const MAX_MESSAGE_LENGTH = 2000;

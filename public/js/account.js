@@ -1,4 +1,4 @@
-// Trang tài khoản (public/account.html): hồ sơ cá nhân + kỹ năng chuyên môn
+// Trang tài khoản (views/account.html): hồ sơ cá nhân + kỹ năng chuyên môn
 
 import {
   ensureLoggedIn,

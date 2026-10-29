@@ -6,6 +6,7 @@
     <title>My First Node.js App</title>
 
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/social.css">
 
     <!-- Bootstrap: tạm tắt, sau này dùng lại thì bỏ comment 2 dòng dưới -->
     <!-- <link rel="stylesheet" href="/bootstrap.min.css"> -->
@@ -22,7 +23,9 @@
           aria-label="Mở menu">☰</button>
 
         <ul class="navbar-menu" id="menu">
-          <li><a class="nav-link time-font" href="#">Trang chủ</a></li>
+          <li><a class="nav-link time-font is-current" href="/">Trang chủ</a></li>
+          <li><a class="nav-link time-font" href="/friends.html">Bạn bè</a></li>
+          <li><a class="nav-link time-font" href="/chat.html">Tin nhắn</a></li>
           <li><a class="nav-link time-font" href="#services">Dịch vụ</a></li>
           <li><a class="nav-link time-font" href="#about">Về chúng tôi</a></li>
           <li><a class="nav-link time-font" href="#contact">Liên hệ</a></li>
@@ -123,10 +126,9 @@
               <div class="form-group">
                 <label for="trangThai">Trạng thái <span class="required">*</span></label>
                 <select id="trangThai">
-                  <option value="not_started" selected>Chưa bắt đầu</option>
-                  <option value="in_progress">Đang thực hiện</option>
-                  <option value="completed">Hoàn thành</option> 
-                  <!-- 'not_started','in_progress','completed' -->
+                  <option value="Chưa bắt đầu" selected>Chưa bắt đầu</option>
+                  <option value="Đang thực hiện">Đang thực hiện</option>
+                  <option value="Hoàn thành">Hoàn thành</option>
                 </select>
               </div>
             </div>
@@ -159,6 +161,6 @@
       </div>
     </div>
 
-    <script type="module" src="/script/main.js"></script>
+    <script type="module" src="/js/main.js"></script>
   </body>
 </html>

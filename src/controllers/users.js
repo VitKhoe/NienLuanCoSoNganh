@@ -1,8 +1,8 @@
 // Nhóm 1 - Người dùng & Hồ sơ:
 // đăng ký, đăng nhập, đăng xuất, hồ sơ cá nhân, kỹ năng chuyên môn
 
-import db from './db.js';
-import { HttpError, sendJson, readJson } from './helpers.js';
+import db from '../models/db.js';
+import { HttpError, sendJson, readJson } from '../utils/helpers.js';
 import {
   hashPassword,
   verifyPassword,
@@ -10,7 +10,7 @@ import {
   createSession,
   destroySession,
   requireUser
-} from './session.js';
+} from '../utils/session.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_RE = /^\+?[0-9 .-]{8,20}$/;

@@ -3,10 +3,10 @@
 //   Accepted = đã là bạn bè
 //   Blocked  = bị chặn (ứng dụng chỉ đọc trạng thái này, không tự tạo)
 
-import db from './db.js';
-import { HttpError, sendJson } from './helpers.js';
-import { requireUser } from './session.js';
-import { readObject, toId } from './validate.js';
+import db from '../models/db.js';
+import { HttpError, sendJson } from '../utils/helpers.js';
+import { requireUser } from '../utils/session.js';
+import { readObject, toId } from '../utils/validate.js';
 
 const PENDING = "(k.trangThai = 'Pending' OR k.trangThai IS NULL)";
 

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bạn bè</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/social.css">
+  </head>
+  <body>
+
+    <!-- ===== Thanh điều hướng ===== -->
+    <nav class="navbar">
+      <div class="container navbar-inner">
+        <a class="navbar-brand" href="/">Switch</a>
+
+        <button class="navbar-toggle" id="menuToggle" type="button"
+          aria-label="Mở menu">☰</button>
+
+        <ul class="navbar-menu" id="menu">
+          <li><a class="nav-link time-font" href="/">Trang chủ</a></li>
+          <li><a class="nav-link time-font is-current" href="/friends.html">Bạn bè</a></li>
+          <li><a class="nav-link time-font" href="/chat.html">Tin nhắn</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnLogout">Đăng xuất</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnAccount">Tài khoản</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="container page">
+      <section class="card">
+        <div class="card-body">
+          <h2 class="page-title">Bạn bè</h2>
+
+          <div class="tabs">
+            <button type="button" class="tab is-active" data-tab="friends">
+              Bạn bè <span class="tab-count" id="count-friends">0</span>
+            </button>
+            <button type="button" class="tab" data-tab="incoming">
+              Lời mời nhận được <span class="tab-count" id="count-incoming">0</span>
+            </button>
+            <button type="button" class="tab" data-tab="outgoing">
+              Lời mời đã gửi <span class="tab-count" id="count-outgoing">0</span>
+            </button>
+          </div>
+
+          <p id="friendsMessage" class="message" hidden></p>
+
+          <ul id="friendList" class="person-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/js/friends.js"></script>
+  </body>
+</html>

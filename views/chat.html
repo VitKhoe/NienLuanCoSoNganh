@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tin nhắn</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/social.css">
+  </head>
+  <body class="chat-page">
+
+    <!-- ===== Thanh điều hướng ===== -->
+    <nav class="navbar">
+      <div class="container navbar-inner">
+        <a class="navbar-brand" href="/">Switch</a>
+
+        <button class="navbar-toggle" id="menuToggle" type="button"
+          aria-label="Mở menu">☰</button>
+
+        <ul class="navbar-menu" id="menu">
+          <li><a class="nav-link time-font" href="/">Trang chủ</a></li>
+          <li><a class="nav-link time-font" href="/friends.html">Bạn bè</a></li>
+          <li><a class="nav-link time-font is-current" href="/chat.html">Tin nhắn</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnLogout">Đăng xuất</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnAccount">Tài khoản</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="container chat-layout">
+
+      <!-- ===== Cột trái: danh sách cuộc trò chuyện ===== -->
+      <aside class="card chat-sidebar">
+        <div class="chat-sidebar-header">
+          <h2 class="page-title">Tin nhắn</h2>
+          <button type="button" class="btn btn-primary btn-sm" id="btnNewGroup"
+            data-modal-open="createGroupModal">Nhóm mới</button>
+        </div>
+        <ul class="chat-list" id="chatList"></ul>
+      </aside>
+
+      <!-- ===== Cột phải: khung chat ===== -->
+      <section class="card chat-main">
+        <div class="chat-empty" id="chatEmpty">
+          Chọn một cuộc trò chuyện ở bên trái để bắt đầu nhắn tin.
+        </div>
+
+        <div class="chat-pane" id="chatPane" hidden>
+          <header class="chat-header">
+            <button type="button" class="link-button chat-back" id="btnBack">‹ Danh sách</button>
+            <strong id="chatTitle"></strong>
+          </header>
+
+          <p id="chatMessage" class="message" hidden></p>
+
+          <div class="message-list" id="messageList"></div>
+
+          <form class="message-form" id="formMessage">
+            <input type="text" id="messageInput" maxlength="2000"
+              placeholder="Nhập tin nhắn..." autocomplete="off">
+            <button type="submit" class="btn btn-primary">Gửi</button>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <!-- ===== Modal tạo nhóm chat ===== -->
+    <div class="modal" id="createGroupModal" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h5 class="modal-title">Tạo nhóm chat</h5>
+          <button type="button" class="modal-close" data-modal-close
+            aria-label="Đóng">&times;</button>
+        </div>
+
+        <form id="formGroup">
+          <div class="modal-body">
+            <p id="groupMessage" class="message" hidden></p>
+
+            <div class="form-group">
+              <label for="groupName">Tên nhóm <span class="required">*</span></label>
+              <input type="text" id="groupName" maxlength="255" required>
+            </div>
+
+            <div class="form-group">
+              <label>Thêm thành viên (chọn trong danh sách bạn bè)</label>
+              <div class="member-list" id="groupMembers"></div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close>Hủy</button>
+            <button type="submit" class="btn btn-success">Tạo nhóm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/js/messages.js"></script>
+  </body>
+</html>

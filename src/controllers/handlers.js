@@ -1,14 +1,13 @@
-import db from './db.js';
-import { HttpError, sendJson, readJson } from './helpers.js';
-import { requireUser } from './session.js';
+import db from '../models/db.js';
+import { HttpError, sendJson, readJson } from '../utils/helpers.js';
+import { requireUser } from '../utils/session.js';
 
-// (Đăng ký / đăng nhập đã chuyển sang users.js)
+// (Đăng ký / đăng nhập: users.js  -  Bài viết, like, bình luận: social.js)
 
 // ---------- Dự án + tin tuyển dụng ----------
 export async function createProject(req, res) {
   const idUser = requireUser(req); // người đang đăng nhập
   const data = await readJson(req);
-  // console.log('Dữ liệu nhận được từ client:', data);
   const { tenDuAn, trangThai } = data;
   const moTa = data.moTa || null;
   const ngayBD = data.ngayBD || null;
@@ -22,25 +21,19 @@ export async function createProject(req, res) {
   const yeuCau = data.yeuCauTuyenDung || moTa || `Yêu cầu có chuyên môn phù hợp với dự án ${tenDuAn}.`;
 
   // Transaction: tạo dự án và tin tuyển dụng, lỗi bước nào thì hủy cả hai
-  // await db.beginTransaction();
-  // const [rows] = await db.query(
-  // "SHOW CREATE TABLE tintuyendung"
-  // );
-
-  // console.log(rows);
+  await db.beginTransaction();
   try {
     const [duAn] = await db.query(
       `INSERT INTO DuAn (idUserTao, tenDuAn, moTa, ngayBD, ngayKT, trangThai)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [idUser, tenDuAn, moTa, ngayBD, ngayKT, trangThai]
     );
-    console.log('Dự án đã được tạo với id:', duAn.insertId);
+
     const [tin] = await db.query(
       `INSERT INTO TinTuyenDung (idUser, idDuAN, tieuDe, yeuCau, hanNop, trangThai)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, trangThai]
+      [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, 'Đang tuyển']
     );
-    
 
     await db.commit();
     sendJson(res, 201, {
@@ -56,34 +49,11 @@ export async function createProject(req, res) {
 
 export async function getJobs(req, res) {
   const [rows] = await db.query(
-    `SELECT t.idTinTuyen, t.idUser, t.idDuAn, t.tieuDe, t.yeuCau,
+    `SELECT t.idTinTuyen, t.idUser, t.idDuAN, t.tieuDe, t.yeuCau,
             t.hanNop, t.trangThai, d.tenDuAn
      FROM TinTuyenDung t
      LEFT JOIN DuAn d ON t.idDuAN = d.idDuAn
      ORDER BY t.idTinTuyen DESC`
-  );
-  sendJson(res, 200, rows);
-}
-
-// ---------- Bài viết ----------
-export async function createPost(req, res) {
-  const idUser = requireUser(req); // người đang đăng nhập
-  const { noiDung, hinhAnhUrl } = await readJson(req);
-
-  if (!noiDung) {
-    throw new HttpError(400, 'Nội dung bài viết không được để trống');
-  }
-
-  const [result] = await db.query(
-    'INSERT INTO Post (idUser, noiDung, hinhAnhUrl, createdAt) VALUES (?, ?, ?, NOW())',
-    [idUser, noiDung, hinhAnhUrl || null]
-  );
-  sendJson(res, 201, { message: 'Đăng bài viết thành công', idPost: result.insertId });
-}
-
-export async function getPosts(req, res) {
-  const [rows] = await db.query(
-    'SELECT idPost, idUser, noiDung, hinhAnhUrl, createdAt FROM Post ORDER BY createdAt DESC'
   );
   sendJson(res, 200, rows);
 }

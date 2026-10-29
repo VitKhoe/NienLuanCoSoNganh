@@ -6,8 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Thư mục chứa file giao diện (index.html, style.css...)
-const ROOT_DIR = path.join(__dirname, '..');
-console.log('Thư mục giao diện:', ROOT_DIR);
+const ROOT_DIR = path.join(__dirname, '..', '..');
 export class HttpError extends Error {
   constructor(status, message) {
     super(message);

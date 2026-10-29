@@ -1,12 +1,12 @@
 // Nhóm 2 - Mạng xã hội (phần 1): bài viết, like, bình luận
 
-import db from './db.js';
-import { HttpError, sendJson } from './helpers.js';
-import { getSession, requireUser } from './session.js';
-import { readObject, cleanString, toId, parseLimit, parseCursor } from './validate.js';
+import db from '../models/db.js';
+import { HttpError, sendJson } from '../utils/helpers.js';
+import { getSession, requireUser } from '../utils/session.js';
+import { readObject, cleanString, toId, parseLimit, parseCursor } from '../utils/validate.js';
 
 // "like" là từ khóa của SQL nên tên bảng phải đặt trong dấu backtick
-const LIKE = '`like`';
+const LIKE = '`Likepost`';
 
 const MAX_POST_LENGTH = 5000;
 const MAX_COMMENT_LENGTH = 2000;
