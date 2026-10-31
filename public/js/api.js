@@ -80,7 +80,15 @@ export function getCurrentUser() {
 // Chưa đăng nhập thì chuyển về trang đăng nhập. Trả về hồ sơ nếu đã đăng nhập.
 export async function ensureLoggedIn() {
   try {
-    return await getCurrentUser();
+    const currentUser = await getCurrentUser();
+    
+    const userId = currentUser.idUser || currentUser.id;
+
+    if (userId) {
+      localStorage.setItem('currentUserId', userId);
+    }
+    
+    return currentUser;
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       window.location.href = '/login_signup.html';
@@ -215,5 +223,81 @@ export function createProject(data) {
 
 export async function fetchJobs() {
   const response = await request('/api/tin-tuyen-dung');
+  return response.json();
+}
+
+// gắn book mark
+export async function bookMark(idPost){
+  const response = await request(`/api/posts/${idPost}/mark`, { method: 'POST' });
+  return response.json();
+}
+
+// unmark
+export async function unMark(idPost){
+  const response = await request(`/api/posts/${idPost}/mark`, { method: 'DELETE' });
+  return response.json();
+}
+
+export async function createProjectNon_TT(data) {
+  const response = await request('/api/projects-nontintuyen', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+}
+export async function updateProject(idDuAn, data) {
+  const response = await request(`/api/projects/${idDuAn}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+  return response.json();
+} 
+export async function deleteProject(idDuAn) {
+  const response = await request(`/api/projects/${idDuAn}`, {
+    method: 'DELETE'
+  });
+  return response.json();
+}
+export async function closeProject(idDuAn) {
+  const response = await request(`/api/projects/${idDuAn}/close`, {
+    method: 'PATCH'
+  });
+  return response.json();
+}
+export async function getProjectDetail(idDuAn) {
+  const response = await request(`/api/project/${idDuAn}`, {
+    method: 'GET'
+  });
+  // request(withQuery('/api/posts', { limit, before }));
+  return response.json();
+}
+export async function assignMemberRole(idDuAn, { idUser, vaiTro }) {
+  const response = await request(`/api/projects/${idDuAn}/members`, {
+    method: 'POST',
+    body: JSON.stringify({ idUser, vaiTro })
+  });
+  return response.json();
+}
+export async function removeMember(idDuAn, userId) {
+  const response = await request(`/api/projects/${idDuAn}/members/${userId}`, {
+    method: 'DELETE'
+  });
+  return response.json();
+}
+export async function leaveProject(idDuAn) {
+  const response = await request(`/api/projects/${idDuAn}/leave`, {
+    method: 'POST'
+  });
+  return response.json();
+}
+export async function reviewMember(idDuAn, { idUserDuocDanhGia, diem, nhanXet }) {
+  const response = await request(`/api/projects/${idDuAn}/reviews`, {
+    method: 'POST',
+    body: JSON.stringify({ idUserDuocDanhGia, diem, nhanXet })
+  });
+  return response.json();
+}
+export async function fetchProjects() {
+  const response = await request('/api/projects');
   return response.json();
 }

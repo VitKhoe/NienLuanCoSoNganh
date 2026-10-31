@@ -538,3 +538,106 @@ body.modal-open {
 .required {
   color: #dc3545;
 }
+
+.join-request-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #2563eb; /* Đường viền xanh nhấn bên trái */
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 6px 0;
+  max-width: 280px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  text-align: left; /* Luôn căn trái chữ bên trong thẻ */
+}
+
+/* Đổi giao diện nhẹ khi thẻ thuộc tin nhắn của chính mình (bên phải) */
+.chat-message-own .join-request-card {
+  background-color: #f0f7ff;
+  border-left-color: #3b82f6;
+  border-right: 1px solid #bfdbfe;
+}
+
+/* Tiêu đề thẻ */
+.join-request-card .request-header {
+  font-size: 13px;
+  color: #475569;
+  margin-bottom: 4px;
+}
+
+/* Tên dự án */
+.join-request-card .project-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 6px 0 10px 0;
+  word-break: break-word;
+}
+
+/* Khung chứa các nút bấm hành động */
+.join-request-card .request-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #cbd5e1;
+}
+
+/* 🟢 Nút Đồng ý */
+.join-request-card .btn-accept {
+  background-color: #16a34a;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.join-request-card .btn-accept:hover {
+  background-color: #15803d;
+}
+
+.join-request-card .btn-accept:active {
+  transform: scale(0.96);
+}
+
+/* 🔴 Nút Từ chối */
+.join-request-card .btn-reject {
+  background-color: #dc2626;
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.join-request-card .btn-reject:hover {
+  background-color: #b91c1c;
+}
+
+.join-request-card .btn-reject:active {
+  transform: scale(0.96);
+}
+
+/* ⏳ Trạng thái chữ (Dành cho người gửi xem) */
+.join-request-card .request-status {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.join-request-card .request-status.pending {
+  color: #d97706;
+  font-style: italic;
+}
+
+.join-request-card .request-status.success {
+  color: #16a34a;
+  font-weight: 600;
+}

@@ -4,6 +4,7 @@ import * as users from '../controllers/users.js';
 import * as social from '../controllers/social.js';
 import * as connections from '../controllers/connections.js';
 import * as chat from '../controllers/chat.js';
+import * as project from '../controllers/project.js';
 import { sendText, sendFile } from '../utils/helpers.js';
 
 // File tĩnh: đường dẫn URL -> [file, content-type]
@@ -15,10 +16,11 @@ const staticFiles = {
   '/account.html': ['views/account.html', 'text/html; charset=utf-8'],
   '/friends.html': ['views/friends.html', 'text/html; charset=utf-8'],
   '/chat.html': ['views/chat.html', 'text/html; charset=utf-8'],
-  '/projects.html': ['views/projects.html', 'text/html; charset=utf-8'],
+  '/duan.html': ['views/duan.html', 'text/html; charset=utf-8'],
   '/css/style.css': ['public/css/style.css', 'text/css; charset=utf-8'],
   '/css/account.css': ['public/css/account.css', 'text/css; charset=utf-8'],
   '/css/social.css': ['public/css/social.css', 'text/css; charset=utf-8'],
+  '/css/project.css': ['public/css/project.css', 'text/css; charset=utf-8'],
   '/bootstrap.min.css': ['bootstrap.min.css', 'text/css'],
   '/bootstrap.bundle.js': ['bootstrap.bundle.js', 'text/javascript'],
   '/js/main.js': ['public/js/main.js', 'text/javascript; charset=utf-8'],
@@ -33,7 +35,8 @@ const staticFiles = {
   '/js/comments.js': ['public/js/comments.js', 'text/javascript; charset=utf-8'],
   '/js/relations.js': ['public/js/relations.js', 'text/javascript; charset=utf-8'],
   '/js/friends.js': ['public/js/friends.js', 'text/javascript; charset=utf-8'],
-  '/js/messages.js': ['public/js/messages.js', 'text/javascript; charset=utf-8']
+  '/js/messages.js': ['public/js/messages.js', 'text/javascript; charset=utf-8'],
+  '/js/project.js': ['public/js/project.js', 'text/javascript; charset=utf-8']
 };
 
 // API không có id trong đường dẫn: "METHOD /đường-dẫn" -> hàm xử lý
@@ -58,6 +61,8 @@ const routes = {
 
   // Dự án + tuyển dụng
   'POST /api/projects': handlers.createProject,
+  'POST /api/projects-nontintuyen': project.createProject,
+  'GET /api/projects': project.getProjects,
   'GET /api/tin-tuyen-dung': handlers.getJobs
 };
 
@@ -79,6 +84,8 @@ const paramRoutes = [
   withId('POST', '/api/posts/:id/comments', social.addComment),
   withId('PUT', '/api/comments/:id', social.updateComment),
   withId('DELETE', '/api/comments/:id', social.deleteComment),
+  withId('POST', '/api/posts/:id/mark', social.markPost),
+  withId('DELETE', '/api/posts/:id/mark', social.unMark),
 
   // Nhóm 2: kết nối
   withId('POST', '/api/connections/:id/accept', connections.acceptRequest),
@@ -86,8 +93,17 @@ const paramRoutes = [
 
   // Nhóm 2: tin nhắn
   withId('GET', '/api/chats/:id/messages', chat.getMessages),
-  withId('POST', '/api/chats/:id/messages', chat.sendMessage)
-];
+  withId('POST', '/api/chats/:id/messages', chat.sendMessage),
+  //nhom 3: project
+  withId('GET', '/api/project/:id', project.getProjectDetail),        
+  withId('PUT', '/api/projects/:id', project.updateProject),
+  withId('DELETE', '/api/projects/:id', project.deleteProject),
+  withId('PATCH', '/api/projects/:id/close', project.closeProject),
+  withId('POST', '/api/projects/:id/members', project.assignMemberRole),
+  withId('POST', '/api/projects/:id/leave', project.leaveProject),
+  withId('POST', '/api/projects/:id/reviews', project.reviewMember),
+  withId('POST', '/api/projects/:id/join-request', project.requestJoinProject)
+]
 
 function findRoute(method, pathname) {
   const handler = routes[`${method} ${pathname}`];

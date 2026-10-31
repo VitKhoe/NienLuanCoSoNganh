@@ -9,7 +9,8 @@ import {
   openPrivateChat,
   createGroupChat,
   fetchConnections,
-  errorMessage
+  errorMessage,
+  getProjectDetail
 } from './api.js';
 import { escapeHtml, formatDateTime, showMessage, initModals, closeModal } from './ui.js';
 import { initNavbar } from './navbar.js';
@@ -58,29 +59,141 @@ async function loadChats() {
 
 // ---------- Tin nhắn ----------
 
-function renderMessage(message) {
+function parseJoinRequest(noiDung) {
+  if (!noiDung || !noiDung.startsWith('[JOIN_REQUEST]')) return null;
+
+  try {
+    // 1. Xóa chữ [JOIN_REQUEST] và khoảng trắng thừa ở 2 đầu
+    const jsonString = noiDung.replace('[JOIN_REQUEST]', '').trim();
+    
+    // 2. Ép kiểu về Object
+    return JSON.parse(jsonString);
+  } catch (error) {
+    console.error('Lỗi parse JSON tin nhắn:', error);
+    return null;
+  }
+}
+function isJoinRequest(noiDung){
+  if (typeof noiDung !== 'string' || !noiDung.startsWith('[JOIN_REQUEST]')) {
+    return false;
+  }
+  return true;
+}
+
+async function renderMessage(message) {
   const own = message.idUser === me.idUser;
   const sender = !own && current.loai === 'Group'
     ? `<span class="chat-sender">${escapeHtml(message.tenNguoiGui)}</span>`
     : '';
+  
+  if (isJoinRequest(message.noiDung)){
+    const data = parseJoinRequest(message.noiDung);
+    const projectId = data.idDuAn;
+    const projectData = await getProjectDetail(projectId);
+    const members = projectData.thanhVien || [];
+    const currentUserId = message.idUser;
 
-  return `
+    let isMember = members.some(m => Number(m.idUser) === Number(currentUserId)) || 
+                   Number(projectData.idUserTao) === Number(currentUserId);
+    if (!own) isMember = false;
+
+    return `
+    <div class="chat-message ${isMember ? 'chat-message-own' : ''}" data-id="${message.idMessage}">
+      <div class="join-request-card">
+        <div class="request-header">
+          <span><strong>Yêu cầu tham gia dự án</strong></span>
+        </div>
+        <div class="request-body">
+          <div class="project-title">📁 ${escapeHtml(data.tenDuAn)}</div>
+        </div>
+        <div class="request-actions">
+          ${own 
+            ? `<span class="request-status pending">${isMember ? "Bạn đã là thành viên" :"⏳ Đã gửi yêu cầu (Đang chờ duyệt)"}</span>`
+            : `<button class="btn-accept" onclick="handleAcceptJoin(${data.idDuAn}, ${message.idUser}, ${message.idMessage})">
+                 ✓ Đồng ý
+               </button>
+               <button class="btn-reject" onclick="handleRejectJoin(${data.idDuAn}, ${message.idUser}, ${message.idMessage}, '${escapeHtml(data.tenDuAn)}')">
+                 ✕ Từ chối
+               </button>`
+          }
+        </div>
+        <span class="chat-time">${formatDateTime(message.thoiGian)}</span>
+      </div>
+      </div>
+    `;
+  }else {
+    return `
     <div class="chat-message ${own ? 'chat-message-own' : ''}" data-id="${message.idMessage}">
       ${sender}
       <span class="chat-text">${escapeHtml(message.noiDung)}</span>
       <span class="chat-time">${formatDateTime(message.thoiGian)}</span>
     </div>`;
+  }
+  
 }
+async function handleAcceptJoin(idDuAn, idUserXin, idMessage) {
+  if (!confirm('Bạn có chắc chắn muốn duyệt thành viên này vào dự án?')) return;
 
+  try {
+    // 1. Gọi API backend thêm người dùng vào bảng thanhvienduan
+    const res = await fetch(`/api/projects/${idDuAn}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idUser: idUserXin,
+        vaiTro: 'nhan_vien' // Mặc định vai trò thành viên
+      })
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      // 2. Gửi tin nhắn thông báo chấp nhận vào phòng chat
+      if (typeof sendMessage === 'function') {
+        await sendMessage(current.idChatBox, '✓ Yêu cầu tham gia dự án đã được chấp nhận!');
+      }
+
+      // 3. Cập nhật giao diện nút bấm thành trạng thái "Đã chấp nhận"
+      const msgElement = document.querySelector(`[data-id="${idMessage}"]`);
+      if (msgElement) {
+        const actionDiv = msgElement.querySelector('.request-actions');
+        if (actionDiv) {
+          actionDiv.innerHTML = `<span class="request-status success">✓ Đã chấp nhận tham gia</span>`;
+        }
+      }
+    } else {
+      alert(result.message || 'Không thể chấp nhận yêu cầu tham gia.');
+    }
+  } catch (err) {
+    console.error('Lỗi khi chấp nhận tham gia:', err);
+    alert('Không thể kết nối đến máy chủ.');
+  }
+}
+window.handleAcceptJoin = handleAcceptJoin;
+async function handleRejectJoin(idDuAn, idUserXin, idMessage, mss) {
+  if (!confirm('Bạn có chắc chắn muốn từ chối yêu cầu tham gia dự án này?')) return;
+
+  // Cập nhật ngay giao diện nút bấm thành trạng thái "Đã từ chối"
+  const msgElement = document.querySelector(`[data-id="${idMessage}"]`);
+  await sendMessage(current.idChatBox, "Bạn đã bị từ chối khỏi dự án " + mss);
+  if (msgElement) {
+    const actionDiv = msgElement.querySelector('.request-actions');
+    if (actionDiv) {
+      actionDiv.innerHTML = `<span class="request-status rejected">✕ Đã từ chối yêu cầu</span>`;
+    }
+  }
+}
+window.handleRejectJoin = handleRejectJoin;
 // Thêm các tin chưa hiển thị vào cuối khung chat (tin đã có thì bỏ qua)
-function appendMessages(messages, { forceScroll = false } = {}) {
+async function appendMessages(messages, { forceScroll = false } = {}) {
   const fresh = messages.filter((m) => lastMessageId === null || m.idMessage > lastMessageId);
   if (fresh.length === 0) return;
 
   const box = getEl('messageList');
   const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
 
-  box.insertAdjacentHTML('beforeend', fresh.map(renderMessage).join(''));
+  const htmlArray = await Promise.all(fresh.map(renderMessage));
+  box.insertAdjacentHTML('beforeend', htmlArray.join(''));
   lastMessageId = fresh[fresh.length - 1].idMessage;
 
   if (forceScroll || nearBottom) box.scrollTop = box.scrollHeight;

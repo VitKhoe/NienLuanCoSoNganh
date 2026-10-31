@@ -28,7 +28,8 @@ const POST_SELECT = `
          h.avatar,
          (SELECT COUNT(DISTINCT l.idUser) FROM ${LIKE} l WHERE l.idPost = p.idPost) AS soLike,
          (SELECT COUNT(*) FROM comment c WHERE c.idPost = p.idPost) AS soBinhLuan,
-         (SELECT COUNT(*) FROM ${LIKE} l2 WHERE l2.idPost = p.idPost AND l2.idUser = ?) AS daLike
+         (SELECT COUNT(*) FROM ${LIKE} l2 WHERE l2.idPost = p.idPost AND l2.idUser = ?) AS daLike,
+         EXISTS(SELECT 1 FROM bookmarks b WHERE b.post_id = p.idPost AND b.user_id = ?) AS daMark
   FROM post p
   JOIN user u ON u.idUser = p.idUser
   LEFT JOIN hoso h ON h.idUser = p.idUser`;
@@ -84,7 +85,7 @@ export async function getPosts(req, res, params, query = new URLSearchParams()) 
      WHERE (? IS NULL OR p.idPost < ?)
      ORDER BY p.idPost DESC
      LIMIT ?`,
-    [currentUserId(req), before, before, limit]
+    [currentUserId(req),currentUserId(req), before, before, limit]
   );
   sendJson(res, 200, rows.map(formatPost));
 }
@@ -92,7 +93,7 @@ export async function getPosts(req, res, params, query = new URLSearchParams()) 
 // GET /api/posts/:id
 export async function getPost(req, res, params) {
   const [rows] = await db.query(`${POST_SELECT} WHERE p.idPost = ?`, [
-    currentUserId(req),
+    currentUserId(req),currentUserId(req),
     Number(params.id)
   ]);
   if (rows.length === 0) {
@@ -101,11 +102,7 @@ export async function getPost(req, res, params) {
   sendJson(res, 200, formatPost(rows[0]));
 }
 
-// =========================================================================
 // 7. LIKE BÀI VIẾT
-// Bảng like không có khóa duy nhất (idPost, idUser) nên việc "mỗi người chỉ like một lần"
-// được bảo đảm ngay trong câu lệnh INSERT (chỉ chèn khi chưa có).
-// =========================================================================
 
 async function countLikes(idPost) {
   const [rows] = await db.query(
@@ -239,4 +236,33 @@ export async function deleteComment(req, res, params) {
 
   await db.query('DELETE FROM comment WHERE idComment = ? AND idUser = ?', [idComment, idUser]);
   sendJson(res, 200, { message: 'Đã xóa bình luận' });
+}
+
+export async function markPost(req, res, params) {
+  const userID = requireUser(req);
+  const postID = Number(params.id);
+
+  await db.query('INSERT INTO `bookmarks` (`user_id`, `post_id`, `bookmarked_at`) VALUES (?, ?, NOW())', [userID, postID ]);
+  sendJson(res, 200, {marked : true});
+}
+export async function unMark(req, res, params) {
+  const userID = requireUser(req);
+  const postID = Number(params.id);
+  await db.query(
+    'DELETE FROM `bookmarks` WHERE `user_id` = ? AND `post_id` = ?',
+    [userID, postID]
+  );
+  sendJson(res, 200, {marked : false});
+}
+export async function getMarked(req, res, params) {
+  const userID = requireUser(req);
+  const postID = Number(params.id);
+ const [rows] = await db.query(
+    'SELECT 1 FROM `bookmarks` WHERE `user_id` = ? AND `post_id` = ? LIMIT 1',
+    [userID, postID]
+  );
+
+  const marked = rows.length > 0;
+
+  sendJson(res, 200, { marked });
 }

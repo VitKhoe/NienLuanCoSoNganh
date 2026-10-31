@@ -11,7 +11,9 @@ import {
   openPrivateChat,
   getCurrentUser,
   ApiError,
-  errorMessage
+  errorMessage,
+  bookMark,
+  unMark
 } from './api.js';
 import { escapeHtml, formatDateTime, closeModal } from './ui.js';
 import { loadRelations } from './relations.js';
@@ -76,6 +78,12 @@ function renderPost(post) {
         </div>
 
         <div class="post-actions">
+          <button type="button" class="post-action ${post.daMark ? 'is-active' : ''}" data-action="mark">
+            <svg class="icon-bookmark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span class="btn-text">${post.daMark ? 'Đã lưu' : 'Lưu'}</span>
+          </button>
           <button type="button" class="post-action ${post.daLike ? 'is-active' : ''}" data-action="like">${post.daLike ? 'Đã thích' : 'Thích'}</button>
           <button type="button" class="post-action" data-action="comments">Bình luận</button>
         </div>
@@ -172,7 +180,19 @@ async function handleLike(postEl) {
   const liked = postEl.querySelector('[data-action="like"]').classList.contains('is-active');
   updateLike(postEl, liked ? await unlikePost(idPost) : await likePost(idPost));
 }
-
+function updateMark(postEl, { marked }) {
+  const button = postEl.querySelector('[data-action="mark"]');
+  button.classList.toggle('is-active', marked);
+  const textEl = button.querySelector('.btn-text');
+  if (textEl) {
+    textEl.textContent = marked? 'Đã lưu' : 'Lưu';
+  }
+}
+async function handleMark(postEl) {
+  const idPost = Number(postEl.dataset.id);
+  const marked = postEl.querySelector('[data-action="mark"]').classList.contains('is-active');
+  updateMark(postEl, marked ? await unMark(idPost) : await bookMark(idPost))
+}
 // Vẽ lại phần nút Kết bạn / Nhắn tin của mọi bài viết do một người đăng
 function refreshTools(idUser) {
   document.querySelectorAll('#postContainer .post').forEach((postEl) => {
@@ -226,6 +246,7 @@ function bindFeed(container) {
       } else if (['add-friend', 'cancel-request', 'accept-friend'].includes(action)) {
         await handleRelation(action, idUser);
       } else if (action === 'message') await handleMessage(idUser);
+      else if (action === 'mark') await handleMark(postEl);
     } catch (error) {
       alert(errorMessage(error));
     }

@@ -40,6 +40,7 @@ export function showMessage(element, text, type = 'error') {
 export function openModal(id) {
   const modal = document.getElementById(id);
   if (!modal) return;
+  modal.hidden = false;
   modal.classList.add('is-open');
   modal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('modal-open');
@@ -48,6 +49,7 @@ export function openModal(id) {
 export function closeModal(id) {
   const modal = document.getElementById(id);
   if (!modal) return;
+  modal.hidden = true;
   modal.classList.remove('is-open');
   modal.setAttribute('aria-hidden', 'true');
 
@@ -73,7 +75,6 @@ export function initModals() {
       closeModal(closer.closest('.modal').id);
       return;
     }
-
     // Bấm ra vùng nền tối bên ngoài hộp thoại thì đóng
     if (e.target.classList.contains('modal')) {
       closeModal(e.target.id);

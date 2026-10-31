@@ -126,7 +126,48 @@
 .load-more {
   text-align: center;
 }
+/* Style chung cho nút bấm */
+.post-action[data-action="mark"] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  background-color: transparent;
+  color: #65676b; /* Màu xám trung tính */
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
 
+/* Hiệu ứng khi di chuột vào (Hover) */
+.post-action[data-action="mark"]:hover {
+  background-color: #f2f2f2;
+  color: #050505;
+}
+
+.post-action[data-action="mark"] .icon-bookmark {
+  transition: transform 0.2s ease, fill 0.2s ease;
+}
+
+/* Hiệu ứng nảy nhẹ Icon khi hover */
+.post-action[data-action="mark"]:hover .icon-bookmark {
+  transform: translateY(-1px);
+}
+
+/* Trạng thái ĐÃ LƯU (is-active) */
+.post-action[data-action="mark"].is-active {
+  color: #0d6efd; /* Màu xanh lá/xanh dương tùy chủ đề web */
+   /* Nền nhạt */
+}
+
+/* Tô đặc icon khi đã lưu */
+.post-action[data-action="mark"].is-active .icon-bookmark {
+  fill: #0d6efd; /* Tô màu đặc cho icon bookmark */
+  stroke: #0d6efd;
+}
 /* =========================================================
    Bình luận
    ========================================================= */

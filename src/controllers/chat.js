@@ -36,7 +36,7 @@ async function requireMember(idChatBox, idUser) {
 }
 
 // Thêm thành viên nếu chưa có (bảng grchat không có khóa duy nhất nên kiểm tra ngay trong INSERT)
-function addMember(idChatBox, idUser) {
+export function addMember(idChatBox, idUser) {
   return db.query(
     `INSERT INTO grchat (idUser, idChatBox)
      SELECT ?, ? FROM DUAL

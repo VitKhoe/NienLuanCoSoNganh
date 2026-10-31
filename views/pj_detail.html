@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Chi Tiết Dự Án</title>
+  <link rel="stylesheet" href="project-detail.css">
+</head>
+<body>
+  <div class="project-container" id="projectContainer">
+    <!-- 1. HEADER DỰ ÁN -->
+    <div class="project-header">
+      <div class="header-left">
+        <h1 id="projectTitle">Loading...</h1>
+        <span class="badge" id="projectStatus">---</span>
+      </div>
+      <div class="header-actions">
+        <!-- Nút dành cho Manager/Chủ dự án -->
+        <button class="btn btn-outline" id="btnEditProject" onclick="openEditModal()">⚙️ Cài đặt & Cập nhật</button>
+        <button class="btn btn-danger-outline" id="btnCloseProject" onclick="handleCloseProject()">🔒 Đóng dự án</button>
+        
+        <!-- Nút dành cho Thành viên -->
+        <button class="btn btn-warning" id="btnLeaveProject" onclick="handleLeaveProject()">🚪 Rút khỏi dự án</button>
+      </div>
+    </div>
+
+    <!-- 2. NỘI DUNG CHÍNH (3 CỘT / TABS) -->
+    <div class="project-body">
+      <!-- Cột Trái: Thông tin & Mô tả -->
+      <div class="main-content">
+        <div class="card">
+          <h3>Mô tả dự án</h3>
+          <p id="projectDesc">Chưa có mô tả...</p>
+          <div class="project-meta">
+            <span>📅 Thời hạn: <strong id="projectDeadline">--/--/----</strong></span>
+            <span>👤 Chủ dự án: <strong id="projectOwner">---</strong></span>
+          </div>
+        </div>
+
+        <!-- Danh sách công việc (Placeholder) -->
+        <div class="card">
+          <h3>📋 Danh sách công việc</h3>
+          <div id="taskList">
+            <p class="text-muted">Tính năng quản lý công việc của dự án...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cột Phải: Quản lý thành viên -->
+      <div class="sidebar-content">
+        <div class="card">
+          <div class="card-header">
+            <h3>👥 Thành viên (<span id="memberCount">0</span>)</h3>
+            <button class="btn btn-sm btn-primary" id="btnAddMemberBtn" onclick="openAddMemberModal()">+ Thêm</button>
+          </div>
+          
+          <ul class="member-list" id="memberList">
+            <!-- Render danh sách thành viên tại đây -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ĐÁNH GIÁ THÀNH VIÊN -->
+  <div class="modal" id="rateModal" style="display:none;">
+    <div class="modal-content">
+      <h3>⭐ Đánh giá thành viên</h3>
+      <input type="hidden" id="rateUserId">
+      <div class="form-group">
+        <label>Điểm số (1 - 10):</label>
+        <input type="number" id="rateScore" min="1" max="10" value="10">
+      </div>
+      <div class="form-group">
+        <label>Nhận xét:</label>
+        <textarea id="rateComment" rows="3" placeholder="Nhập nhận xét thái độ, tiến độ làm việc..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="submitRating()">Lưu đánh giá</button>
+        <button class="btn btn-outline" onclick="closeRateModal()">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="project-detail.js"></script>
+</body>
+</html>

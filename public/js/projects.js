@@ -9,7 +9,7 @@ function getValue(id) {
   return document.getElementById(id).value.trim();
 }
 
-export function initProjectForm() {
+export async function initProjectForm() {
   const form = document.getElementById('formCreateProject');
   if (!form) return;
 
@@ -28,9 +28,7 @@ export function initProjectForm() {
       moTa: getValue('moTa'),
       ngayBD: getValue('ngayBD') || null,
       ngayKT: getValue('ngayKT') || null,
-      trangThai: getValue('trangThai'),
-      tieuDeTuyenDung: getValue('tieuDeTuyenDung'),
-      yeuCauTuyenDung: getValue('yeuCauTuyenDung')
+      trangThai: getValue('trangThai')
     };
     console.log('Dữ liệu gửi đi:', payload);
     try {
