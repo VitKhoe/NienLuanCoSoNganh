@@ -15,12 +15,14 @@ const staticFiles = {
   '/login_signup.html': ['views/login_signup.html', 'text/html; charset=utf-8'],
   '/account.html': ['views/account.html', 'text/html; charset=utf-8'],
   '/friends.html': ['views/friends.html', 'text/html; charset=utf-8'],
+  '/pj_detail.html': ['views/pj_detail.html', 'text/html; charset=utf-8'],
   '/chat.html': ['views/chat.html', 'text/html; charset=utf-8'],
   '/duan.html': ['views/duan.html', 'text/html; charset=utf-8'],
   '/css/style.css': ['public/css/style.css', 'text/css; charset=utf-8'],
   '/css/account.css': ['public/css/account.css', 'text/css; charset=utf-8'],
   '/css/social.css': ['public/css/social.css', 'text/css; charset=utf-8'],
   '/css/project.css': ['public/css/project.css', 'text/css; charset=utf-8'],
+  '/css/project-detail.css': ['public/css/project-detail.css', 'text/css; charset=utf-8'],
   '/bootstrap.min.css': ['bootstrap.min.css', 'text/css'],
   '/bootstrap.bundle.js': ['bootstrap.bundle.js', 'text/javascript'],
   '/js/main.js': ['public/js/main.js', 'text/javascript; charset=utf-8'],
@@ -36,7 +38,8 @@ const staticFiles = {
   '/js/relations.js': ['public/js/relations.js', 'text/javascript; charset=utf-8'],
   '/js/friends.js': ['public/js/friends.js', 'text/javascript; charset=utf-8'],
   '/js/messages.js': ['public/js/messages.js', 'text/javascript; charset=utf-8'],
-  '/js/project.js': ['public/js/project.js', 'text/javascript; charset=utf-8']
+  '/js/project.js': ['public/js/project.js', 'text/javascript; charset=utf-8'],
+  '/js/pj_detail.js': ['public/js/pj_detail.js', 'text/javascript; charset=utf-8']
 };
 
 // API không có id trong đường dẫn: "METHOD /đường-dẫn" -> hàm xử lý

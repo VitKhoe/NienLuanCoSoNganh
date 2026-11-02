@@ -1,86 +1,201 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Chi Tiết Dự Án</title>
-  <link rel="stylesheet" href="project-detail.css">
-</head>
-<body>
-  <div class="project-container" id="projectContainer">
-    <!-- 1. HEADER DỰ ÁN -->
-    <div class="project-header">
-      <div class="header-left">
-        <h1 id="projectTitle">Loading...</h1>
-        <span class="badge" id="projectStatus">---</span>
-      </div>
-      <div class="header-actions">
-        <!-- Nút dành cho Manager/Chủ dự án -->
-        <button class="btn btn-outline" id="btnEditProject" onclick="openEditModal()">⚙️ Cài đặt & Cập nhật</button>
-        <button class="btn btn-danger-outline" id="btnCloseProject" onclick="handleCloseProject()">🔒 Đóng dự án</button>
-        
-        <!-- Nút dành cho Thành viên -->
-        <button class="btn btn-warning" id="btnLeaveProject" onclick="handleLeaveProject()">🚪 Rút khỏi dự án</button>
-      </div>
-    </div>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quản lý Dự án - WorkSpaces</title>
 
-    <!-- 2. NỘI DUNG CHÍNH (3 CỘT / TABS) -->
-    <div class="project-body">
-      <!-- Cột Trái: Thông tin & Mô tả -->
-      <div class="main-content">
-        <div class="card">
-          <h3>Mô tả dự án</h3>
-          <p id="projectDesc">Chưa có mô tả...</p>
-          <div class="project-meta">
-            <span>📅 Thời hạn: <strong id="projectDeadline">--/--/----</strong></span>
-            <span>👤 Chủ dự án: <strong id="projectOwner">---</strong></span>
-          </div>
-        </div>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/social.css">
+    <link rel="stylesheet" href="/css/project.css">
+    <link rel="stylesheet" href="/css/project-detail.css">
+  </head>
+  <body>
 
-        <!-- Danh sách công việc (Placeholder) -->
-        <div class="card">
-          <h3>📋 Danh sách công việc</h3>
-          <div id="taskList">
-            <p class="text-muted">Tính năng quản lý công việc của dự án...</p>
-          </div>
-        </div>
+    <!-- ===== Thanh điều hướng ===== -->
+    <nav class="navbar">
+      <div class="container navbar-inner">
+        <a class="navbar-brand" href="#">Switch</a>
+        <button class="navbar-toggle" id="menuToggle" type="button" aria-label="Mở menu">☰</button>
+
+        <ul class="navbar-menu" id="menu">
+          <li><a class="nav-link time-font" href="/">Trang chủ</a></li>
+          <li><a class="nav-link time-font" href="/friends.html">Bạn bè</a></li>
+          <li><a class="nav-link time-font" href="/chat.html">Tin nhắn</a></li>
+          <li><a class="nav-link time-font" href="/duan.html">WorkSpaces</a></li>
+          <li><a class="nav-link time-font" href="/pj_detail.html">My Projects</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnLogout">Đăng xuất</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnAccount">Tài khoản</a></li>
+        </ul>
       </div>
+    </nav>
 
-      <!-- Cột Phải: Quản lý thành viên -->
-      <div class="sidebar-content">
-        <div class="card">
-          <div class="card-header">
-            <h3>👥 Thành viên (<span id="memberCount">0</span>)</h3>
-            <button class="btn btn-sm btn-primary" id="btnAddMemberBtn" onclick="openAddMemberModal()">+ Thêm</button>
+    <!-- ===== Nội dung chính Quản lý Dự án ===== -->
+    <main class="container project-container">
+
+      <!-- Thanh tiêu đề & Nút tạo dự án -->
+      <header class="project-header">
+        <h2>Dự án của tôi</h2>
+        <button class="btn btn-primary" id="btnOpenCreateModal" data-modal-open="createProjectModal">+ Tạo dự án mới</button>
+      </header>
+
+      <div class="project-layout">
+        <!-- 1. Danh sách dự án (Cột trái) -->
+        <aside class="project-sidebar"> 
+          <div class="search-box">
+            <input
+              type="text"
+              id="searchProjectInput"
+              class="form-control"
+              placeholder="🔍 Tìm kiếm dự án..."
+              autocomplete="off">
           </div>
-          
-          <ul class="member-list" id="memberList">
-            <!-- Render danh sách thành viên tại đây -->
+          <ul class="project-list" id="projectList">
+            <li class="loading-text">Đang tải danh sách dự án...</li>
           </ul>
+        </aside>
+
+        <!-- 2. Chi tiết dự án (Cột phải) -->
+        <section class="project-detail-panel" id="projectDetailPanel">
+          <div class="empty-state">
+            <p>Vui lòng chọn một dự án từ danh sách bên trái để xem chi tiết.</p>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: TẠO / SỬA DỰ ÁN (Chức năng 17 & 18) -->
+    <!-- ========================================================================= -->
+    <div class="modal" id="createProjectModal" hidden>
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalProjectTitle">Tạo dự án mới</h5>
+          <button type="button" class="modal-close" aria-label="Đóng" data-modal-close="createProjectModal">&times;</button>
         </div>
+
+        <form id="formCreateProject">
+          <input type="hidden" id="editProjectId" value="">
+
+          <div class="modal-body">
+            <h6 class="section-title section-title-project">1. Thông tin dự án</h6>
+
+            <div class="form-group">
+              <label for="tenDuAn">Tên dự án <span class="required">*</span></label>
+              <input type="text" id="tenDuAn" class="form-control" placeholder="VD: Phân loại ảnh X-quang COVID-19" required>
+            </div>
+
+            <div class="form-group">
+              <label for="moTa">Mô tả dự án</label>
+              <textarea id="moTa" class="form-control" rows="3" placeholder="Mô tả mục tiêu dự án..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ngayBD">Ngày bắt đầu</label>
+                <input type="date" id="ngayBD" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="ngayKT">Ngày kết thúc</label>
+                <input type="date" id="ngayKT" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="trangThai">Trạng thái <span class="required">*</span></label>
+                <select id="trangThai" class="form-control">
+                  <option value="not_started" selected>Chưa bắt đầu</option>
+                  <option value="in_progress">Đang thực hiện</option>
+                  <option value="completed">Hoàn thành</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="createProjectModal">Hủy</button>
+            <button type="submit" class="btn btn-success">Lưu dự án</button>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
 
-  <!-- MODAL: ĐÁNH GIÁ THÀNH VIÊN -->
-  <div class="modal" id="rateModal" style="display:none;">
-    <div class="modal-content">
-      <h3>⭐ Đánh giá thành viên</h3>
-      <input type="hidden" id="rateUserId">
-      <div class="form-group">
-        <label>Điểm số (1 - 10):</label>
-        <input type="number" id="rateScore" min="1" max="10" value="10">
-      </div>
-      <div class="form-group">
-        <label>Nhận xét:</label>
-        <textarea id="rateComment" rows="3" placeholder="Nhập nhận xét thái độ, tiến độ làm việc..."></textarea>
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-primary" onclick="submitRating()">Lưu đánh giá</button>
-        <button class="btn btn-outline" onclick="closeRateModal()">Hủy</button>
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: THÊM / CẬP NHẬT THÀNH VIÊN & PHÂN QUYỀN (Chức năng 20) -->
+    <!-- ========================================================================= -->
+    <div class="modal" id="memberModal" hidden>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h5 class="modal-title">Phân quyền thành viên</h5>
+          <button type="button" class="modal-close" data-modal-close="memberModal">&times;</button>
+        </div>
+
+        <form id="memberForm">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="memberUserId">ID Thành viên (*):</label>
+              <input type="number" id="memberUserId" class="form-control" required placeholder="Nhập ID người dùng">
+            </div>
+
+            <div class="form-group">
+              <label for="memberRole">Vai trò (*):</label>
+              <select id="memberRole" class="form-control" required>
+                <option value="nhan_vien">Nhân viên</option>
+                <option value="quan_ly">Quản lý</option>
+                <option value="khach">Khách</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="memberModal">Hủy</button>
+            <button type="submit" class="btn btn-primary">Xác nhận</button>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
 
-  <script src="project-detail.js"></script>
-</body>
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: ĐÁNH GIÁ THÀNH VIÊN (Chức năng 23) -->
+    <!-- ========================================================================= -->
+    <div class="modal" id="reviewModal" hidden>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h5 class="modal-title">Đánh giá thành viên</h5>
+          <button type="button" class="modal-close" data-modal-close="reviewModal">&times;</button>
+        </div>
+
+        <form id="reviewForm">
+          <input type="hidden" id="reviewTargetUserId" value="">
+
+          <div class="modal-body">
+            <p>Đánh giá cho thành viên: <strong id="reviewTargetUserName">---</strong></p>
+
+            <div class="form-group">
+              <label for="reviewScore">Điểm đánh giá (1 - 5 sao):</label>
+              <select id="reviewScore" class="form-control" required>
+                <option value="5">5 - Rất tốt</option>
+                <option value="4">4 - Tốt</option>
+                <option value="3">3 - Khá</option>
+                <option value="2">2 - Trung bình</option>
+                <option value="1">1 - Cần cải thiện</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reviewComment">Nhận xét / Đánh giá:</label>
+              <textarea id="reviewComment" class="form-control" rows="3" placeholder="Nhập ý kiến đánh giá..."></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-modal-close="reviewModal">Hủy</button>
+            <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Script khởi tạo dự án -->
+    <script type="module" src="/js/pj_detail.js"></script>
+
+  </body>
 </html>
