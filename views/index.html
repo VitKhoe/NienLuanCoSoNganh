@@ -75,7 +75,8 @@
             </div>
             <div class="form-group">
               <label for="hinhAnhUrl">Hình ảnh</label>
-              <input type="file" id="hinhAnhUrl" accept="image/*">
+              <input type="file" id="hinhAnhUrl" accept="image/*" multiple>
+              <div id="previewImages" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;"></div>
             </div>
           </div>
 
@@ -158,7 +159,10 @@
         </form>
       </div>
     </div> -->
-
+    <div id="imageLightboxModal" class="lightbox-modal" hidden>
+  <span class="lightbox-close">&times;</span>
+  <img class="lightbox-content" id="lightboxImage" alt="Ảnh phóng to" />
+</div>
     <script type="module" src="/js/main.js"></script>
   </body>
 </html>

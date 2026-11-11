@@ -29,17 +29,16 @@ export async function createProject(req, res) {
       [idUser, tenDuAn, moTa, ngayBD, ngayKT, trangThai]
     );
 
-    const [tin] = await db.query(
-      `INSERT INTO TinTuyenDung (idUser, idDuAN, tieuDe, yeuCau, hanNop, trangThai)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, 'Đang tuyển']
-    );
+    // const [tin] = await db.query(
+    //   `INSERT INTO TinTuyenDung (idUser, idDuAN, tieuDe, yeuCau, hanNop, trangThai)
+    //    VALUES (?, ?, ?, ?, ?, ?)`,
+    //   [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, 'Đang tuyển']
+    // );
 
     await db.commit();
     sendJson(res, 201, {
       message: 'Tạo dự án và tin tuyển dụng thành công',
-      idDuAn: duAn.insertId,
-      idTinTuyen: tin.insertId
+      idDuAn: duAn.insertId
     });
   } catch (err) {
     await db.rollback();

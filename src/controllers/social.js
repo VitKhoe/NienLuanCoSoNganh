@@ -23,13 +23,14 @@ function currentUserId(req) {
 // Câu SELECT bài viết kèm tên tác giả, số like, số bình luận, mình đã like chưa.
 // Tham số đầu tiên (?) là id người đang xem.
 const POST_SELECT = `
-  SELECT p.idPost, p.idUser, p.noiDung, p.hinhAnhUrl, p.createdAt,
+  SELECT p.idPost, p.idUser, p.noiDung, p.createdAt,
          COALESCE(NULLIF(h.HovaTen, ''), u.userName) AS tenTacGia,
          h.avatar,
          (SELECT COUNT(DISTINCT l.idUser) FROM ${LIKE} l WHERE l.idPost = p.idPost) AS soLike,
          (SELECT COUNT(*) FROM comment c WHERE c.idPost = p.idPost) AS soBinhLuan,
          (SELECT COUNT(*) FROM ${LIKE} l2 WHERE l2.idPost = p.idPost AND l2.idUser = ?) AS daLike,
-         EXISTS(SELECT 1 FROM bookmarks b WHERE b.post_id = p.idPost AND b.user_id = ?) AS daMark
+         EXISTS(SELECT 1 FROM bookmarks b WHERE b.post_id = p.idPost AND b.user_id = ?) AS daMark,
+         (SELECT GROUP_CONCAT(i.image_id ORDER BY i.image_id ASC) FROM image i WHERE i.post_id = p.idPost) AS imageIds
   FROM post p
   JOIN user u ON u.idUser = p.idUser
   LEFT JOIN hoso h ON h.idUser = p.idUser`;
@@ -52,28 +53,40 @@ async function assertPostExists(idPost) {
 
 // POST /api/posts   body: { noiDung, hinhAnhUrl }
 export async function createPost(req, res) {
-  const idUser = requireUser(req);
-  const data = await readObject(req);
-  const noiDung = cleanString(data.noiDung);
-  const hinhAnhUrl = cleanString(data.hinhAnhUrl) || null;
+  try {
+    const idUser = requireUser(req);
+    const data = await readObject(req);
+    const noiDung = cleanString(data.noiDung);
 
-  if (!noiDung) {
-    throw new HttpError(400, 'Nội dung bài viết không được để trống');
-  }
-  if (noiDung.length > MAX_POST_LENGTH) {
-    throw new HttpError(400, `Bài viết tối đa ${MAX_POST_LENGTH} ký tự`);
-  }
-  if (hinhAnhUrl && hinhAnhUrl.length > 500) {
-    throw new HttpError(400, 'Đường dẫn ảnh tối đa 500 ký tự');
-  }
+    if (!noiDung) {
+      throw new HttpError(400, 'Nội dung bài viết không được để trống');
+    }
+    if (noiDung.length > MAX_POST_LENGTH) {
+      throw new HttpError(400, `Bài viết tối đa ${MAX_POST_LENGTH} ký tự`);
+    }
 
-  const [result] = await db.query(
-    'INSERT INTO post (idUser, noiDung, hinhAnhUrl) VALUES (?, ?, ?)',
-    [idUser, noiDung, hinhAnhUrl]
-  );
-  sendJson(res, 201, { message: 'Đăng bài viết thành công', idPost: result.insertId });
+    // Tạo dòng mới trong bảng post
+    const [result] = await db.query(
+      'INSERT INTO post (idUser, noiDung) VALUES (?, ?)',
+      [idUser, noiDung]
+    );
+
+    // Trả về idPost để Client tiếp tục dùng ID này upload ảnh ở Bước 2
+    sendJson(res, 201, {
+      success: true,
+      message: 'Tạo bài viết thành công',
+      idPost: result.insertId
+    });
+
+  } catch (error) {
+    if (error instanceof HttpError) {
+      sendJson(res, error.statusCode, { message: error.message });
+    } else {
+      console.error('Lỗi createPost:', error);
+      sendJson(res, 500, { message: 'Lỗi server nội bộ' });
+    }
+  }
 }
-
 // GET /api/posts?limit=20&before=<idPost>   (công khai; đăng nhập thì có thêm "daLike")
 // Bài mới nhất trước. Muốn tải thêm bài cũ hơn: truyền before = idPost của bài cuối cùng đã có.
 export async function getPosts(req, res, params, query = new URLSearchParams()) {
@@ -265,4 +278,32 @@ export async function getMarked(req, res, params) {
   const marked = rows.length > 0;
 
   sendJson(res, 200, { marked });
+}
+export async function searchUsers(req, res, params) {
+  // Lấy từ khóa tìm kiếm từ Query URL (/api/users/search?q=abc)
+  const urlParams = new URLSearchParams(req.url.split('?')[1]);
+  const keyword = urlParams.get('q') || '';
+
+  if (!keyword || keyword.trim() === '') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify([]));
+  }
+
+  try {
+    const searchTerm = `%${keyword.trim()}%`;
+    const [users] = await db.query(
+      `SELECT idUser, userName, email 
+       FROM user
+       WHERE userName LIKE ? OR email LIKE ? 
+       LIMIT 10`,
+      [searchTerm, searchTerm]
+    );
+
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify(users));
+  } catch (err) {
+    console.error('Lỗi searchUsers:', err);
+    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+    return res.end(JSON.stringify({ message: 'Lỗi server khi tìm kiếm' }));
+  }
 }

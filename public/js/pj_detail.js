@@ -2,8 +2,10 @@
  * Quản lý Dự án (WorkSpaces) - /js/project.js
  * Tương thích 100% với file duan.html
  */
+
 import { initNavbar } from './navbar.js';
-import {  ensureLoggedIn, getProjectDetail, fetchProjects} from './api.js';
+import {  ensureLoggedIn, getProjectDetail, fetchProjects, removeMember, createProjectNon_TT} from './api.js';
+import {createRecruitment} from './recruitments.js';
 // Biến lưu trữ trạng thái ứng dụng
 let currentUserId = localStorage.getItem('currentUserId') ? Number(localStorage.getItem('currentUserId')) : null;
 let currentProject = null;
@@ -102,19 +104,24 @@ async function loadProjects() {
   const projectListEl = document.getElementById('projectList');
   try {
     const projectsListCache = await fetchProjects();
-    renderProjectList(projectsListCache);
+    const listPJDetail = await Promise.all(projectsListCache.map(p => getProjectDetail(p.idDuAn)));
+    const filtered = listPJDetail.filter(p => isMemberOfProject(p, currentUserId));
+    renderProjectList(filtered);
   } catch (err) {
     console.error(err);
     projectListEl.innerHTML = `<li class="error-text">❌ Lỗi khi tải dự án.</li>`;
   }
+    
 }
 
 function renderProjectList(list) {
+  //const own = number(currentUserId);
   const projectListEl = document.getElementById('projectList');
   if (!list || list.length === 0) {
     projectListEl.innerHTML = `<li class="empty-text">Chưa có dự án nào.</li>`;
     return;
   }
+  
   const statusLabels = {
     not_started: 'Chưa bắt đầu',
     in_progress: 'Đang làm',
@@ -158,17 +165,46 @@ window.selectProject = async function(idDuAn) {
 
   try {
     const res = await getProjectDetail(idDuAn);
+    currentProject = res;
     //renderProjectList(projectsListCache);
-    renderProjectDetail(res);
+    const [tasksData] = await Promise.all([
+      fetchTasksByProject(idDuAn)
+    ]);
+    renderProjectDetail(res, tasksData);
+    panel.addEventListener('click', (e) => {
+    // Kiểm tra nút được click có matcher class/id mong muốn không
+    if (e.target.closest('#btnOpenRecruitmentModal')) {
+      if (!currentProject) return alert('Chưa chọn dự án!');
+      openModal('recruitmentModal');
+    }
+  });
   } catch (err) {
     console.error(err);
     panel.innerHTML = `<div class="empty-state"><p>❌ Lỗi khi tải dữ liệu dự án.</p></div>`;
   }
 };
+function isMemberOfProject(project, userId) {
+  if (!project || !userId) return false;
 
-function renderProjectDetail(p) {
+  const currentId = Number(userId);
+  if (isNaN(currentId) || currentId === 0) return false;
+
+  // 1. Kiểm tra nếu là Chủ dự án (người tạo)
+  const ownerId = Number(project.idUserTao || project.id_user_tao);
+  const isOwner = !isNaN(ownerId) && ownerId === currentId;
+
+  // 2. Kiểm tra nếu nằm trong mảng thanhVien (khớp với idUser)
+  const isMember = Array.isArray(project.thanhVien) && project.thanhVien.some(m => {
+    return Number(m.idUser) === currentId;
+  });
+
+  return isOwner || isMember;
+}
+function renderProjectDetail(p, tasks = []) {
   const panel = document.getElementById('projectDetailPanel');
-  const isOwner = Number(p.idUserTao) === currentUserId;
+  if (!panel) return;
+
+  const isOwner = Number(p.idUserTao) === Number(localStorage.getItem('currentUserId'));
   const isCompleted = p.trangThai === 'completed';
 
   panel.innerHTML = `
@@ -179,12 +215,19 @@ function renderProjectDetail(p) {
       </div>
       <div class="project-actions">
         ${isOwner ? `
-          <button class="btn btn-sm btn-outline" onclick="openEditProjectModal()">✏️ Sửa</button>
+          <button class="btn btn-sm btn-outline" onclick="openEditProjectModal(${JSON.stringify(p).replace(/"/g, '&quot;')})">✏️ Sửa</button>
           <button class="btn btn-sm btn-danger" onclick="handleDeleteProject(${p.idDuAn})">🗑️ Xóa</button>
         ` : `
           <button class="btn btn-sm btn-warning" onclick="handleLeaveProject(${p.idDuAn})">🚪 Rút khỏi dự án</button>
         `}
       </div>
+      <br>
+      <button class="btn btn-primary" onclick="openCreateTaskModal()">
+        ➕ Tạo công việc mới
+      </button>
+      <button id="btnOpenRecruitmentModal" class="btn btn-primary">
+    📢 Đăng tin tuyển dụng
+    </button>
     </div>
 
     <div class="project-detail-body">
@@ -193,6 +236,7 @@ function renderProjectDetail(p) {
         <p><strong>Ngày bắt đầu:</strong> ${p.ngayBD || '--/--/----'} | <strong>Ngày kết thúc:</strong> ${p.ngayKT || '--/--/----'}</p>
       </div>
 
+      <!-- KHU VỰC THÀNH VIÊN DỰ ÁN -->
       <div class="project-members-section">
         <div class="section-header">
           <h4>👥 Thành viên dự án (${(p.thanhVien || []).length})</h4>
@@ -212,15 +256,71 @@ function renderProjectDetail(p) {
                   <button class="btn btn-xs btn-outline" onclick="openReviewModal(${m.idUser}, '${escapeHtml(m.tenNguoiDung || '')}')">⭐ Đánh giá</button>
                 ` : ''}
                 ${isOwner && Number(m.idUser) !== currentUserId ? `
-                  <button class="btn btn-xs btn-danger" onclick="handleRemoveMember(${m.idUser})">✕ Xóa</button>
+                  <button class="btn btn-xs btn-danger" onclick="handleRemoveMember(${m.idUser}, ${p.idDuAn})">✕ Xóa</button>
                 ` : ''}
               </div>
             </li>
           `).join('')}
         </ul>
       </div>
+
+      <!-- 🔑 KHU VỰC DANH SÁCH TASK MỚI THÊM -->
+      <div class="project-tasks-section" style="margin-top: 24px;">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4>📋 Danh sách công việc (${tasks.length})</h4>
+        </div>
+
+        ${tasks.length === 0 ? `
+          <p style="color: #888; font-style: italic; padding: 12px; background: #f9f9f9; border-radius: 6px;">Chưa có công việc nào trong dự án này.</p>
+        ` : `
+          <div class="task-list-items" style="display: flex; flex-direction: column; gap: 10px;">
+            ${tasks.map(t => {
+              const assignedList = t.assignedUsers;
+              return `
+                <div class="task-card-row" style="padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; display: flex; justify-content: space-between; align-items: center;">
+                  <div class="task-main-info">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <strong style="font-size: 15px;">${escapeHtml(t.tenTask)}</strong>
+                      <span class="badge status-${(t.trangThai || 'todo').toLowerCase()}" style="padding: 2px 8px; border-radius: 4px; font-size: 11px; ${getTaskStatusStyle(t.trangThai)}">
+                        ${t.trangThai || 'Todo'}
+                      </span>
+                    </div>
+
+                    <!-- Hiển thị danh sách người thực hiện hoặc null -->
+                    <div style="font-size: 13px; color: #555; margin-top: 6px;">
+                      👤 <strong>Người thực hiện:</strong> 
+                      ${assignedList && assignedList.length > 0 
+                        ? assignedList.map(u => `<span style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 12px; margin-right: 4px;">${escapeHtml(u.tenNguoiDung || `User #${u.idUser}`)}</span>`).join('')
+                        : '<span style="color: #999; font-style: italic;">Chưa phân công</span>'
+                      }
+                    </div>
+
+                    ${t.deadLine ? `
+                      <div style="font-size: 12px; color: #888; margin-top: 4px;">
+                        ⏰ Hạn chót: ${t.deadLine}
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <div class="task-actions">
+                    <button class="btn btn-xs btn-outline" onclick="openTaskDetailModal(${t.idTask})">👁️ Xem chi tiết</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+
     </div>
   `;
+}
+
+// Helper đổi màu badge theo chuẩn trạng thái task ENUM('Todo', 'Doing', 'Done')
+function getTaskStatusStyle(status) {
+  if (status === 'Done') return 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
+  if (status === 'Doing') return 'background: #cce5ff; color: #004085; border: 1px solid #b8daff;';
+  return 'background: #fff3cd; color: #856404; border: 1px solid #ffeeba;'; // Todo
 }
 
 // ==========================================
@@ -245,12 +345,12 @@ function initFormEvents() {
       const method = editId ? 'PUT' : 'POST';
 
       try {
-        const res = await fetch(url, {
+        if (editId) {
+          const res = await fetch(url, {
           method,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data)
         });
-
         if (res.ok) {
           closeModal('createProjectModal');
           await loadProjects();
@@ -258,6 +358,19 @@ function initFormEvents() {
         } else {
           const err = await res.json();
           alert(err.message || 'Lỗi khi lưu thông tin dự án');
+        }
+
+        }
+        else {
+          const res = await createProjectNon_TT(data);
+          if (res.ok) {
+          closeModal('createProjectModal');
+          await loadProjects();
+          if (editId) selectProject(editId);
+        } else {
+          const err = await res.json();
+          alert(err.message || 'Lỗi khi lưu thông tin dự án');
+        }
         }
       } catch (err) {
         console.error(err);
@@ -347,12 +460,12 @@ window.handleDeleteProject = async function(idDuAn) {
 };
 
 // 21. Xóa thành viên
-window.handleRemoveMember = async function(idUser) {
+window.handleRemoveMember = async function(idUser, projectId) {
   if (!confirm('Bạn có chắc muốn xóa thành viên này khỏi dự án?')) return;
   try {
-    const res = await fetch(`/api/projects/${currentProject.idDuAn}/members/${idUser}`, { method: 'DELETE' });
+    const res = await removeMember(projectId, idUser);
     if (res.ok) {
-      selectProject(currentProject.idDuAn);
+      selectProject(projectId);
     } else {
       alert('Không thể xóa thành viên.');
     }
@@ -396,6 +509,101 @@ function getStatusLabel(status) {
   }
 }
 
+
+window.openEditProjectModal = function(project) {
+  const p = project || currentProject;
+  if (!p) return alert('Vui lòng chọn dự án cần chỉnh sửa');
+
+  document.getElementById('edit_idDuAn').value = p.idDuAn;
+  document.getElementById('edit_tenDuAn').value = p.tenDuAn || '';
+  document.getElementById('edit_moTa').value = p.moTa || '';
+  document.getElementById('edit_ngayBD').value = p.ngayBD ? p.ngayBD.substring(0, 10) : '';
+  document.getElementById('edit_ngayKT').value = p.ngayKT ? p.ngayKT.substring(0, 10) : '';
+  document.getElementById('edit_trangThai').value = p.trangThai || 'not_started';
+
+  openModal('editProjectModal');
+};
+export async function updateProject(idDuAn, projectData) {
+  const res = await fetch(`/api/projects/${idDuAn}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(projectData)
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || 'Cập nhật dự án thất bại');
+  }
+
+  return await res.json();
+}
+// Lắng nghe sự kiện Submit Form Edit Dự Án
+document.addEventListener('DOMContentLoaded', () => {
+  const formEdit = document.getElementById('formEditProject');
+  if (formEdit) {
+    formEdit.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const idDuAn = document.getElementById('edit_idDuAn').value;
+      const data = {
+        tenDuAn: document.getElementById('edit_tenDuAn').value.trim(),
+        moTa: document.getElementById('edit_moTa').value.trim(),
+        ngayBD: document.getElementById('edit_ngayBD').value || null,
+        ngayKT: document.getElementById('edit_ngayKT').value || null,
+        trangThai: document.getElementById('edit_trangThai').value
+      };
+
+      try {
+        await updateProject(idDuAn, data);
+        alert('Cập nhật dự án thành công!');
+        closeModal('editProjectModal');
+        
+        // Reload lại danh sách và chi tiết dự án
+        await loadProjects();
+        if (typeof selectProject === 'function') {
+          selectProject(idDuAn);
+        }
+      } catch (err) {
+        console.error('Lỗi khi cập nhật dự án:', err);
+        alert(err.message);
+      }
+    });
+  }
+  const formCreateRecruitment = document.getElementById('createRecruitmentForm');
+if (formCreateRecruitment) {
+  formCreateRecruitment.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentProject) {
+      alert('Vui lòng chọn dự án trước!');
+      return;
+    }
+
+    const data = {
+      idDuAn: currentProject.idDuAn,
+      tieuDe: document.getElementById('recruitmentTitle').value.trim(),
+      yeuCau: document.getElementById('recruitmentRequirements').value.trim(),
+      hanNop: document.getElementById('recruitmentDeadline').value || null,
+      trangThai: document.getElementById('recruitmentStatus').value
+    };
+
+    try {
+      await createRecruitment(data);
+      alert('Đăng tin tuyển dụng thành công!');
+      closeModal('recruitmentModal');
+      formCreateRecruitment.reset();
+      
+      // Reload lại thông tin dự án hiện tại
+      if (typeof selectProject === 'function') {
+        selectProject(currentProject.idDuAn);
+      }
+    } catch (err) {
+      console.error('Lỗi khi đăng tin tuyển dụng:', err);
+      alert(err.message);
+    }
+  });
+}
+});
 function getRoleLabel(role) {
   switch (role) {
     case 'quan_ly': return 'Quản lý';
@@ -404,5 +612,146 @@ function getRoleLabel(role) {
     default: return role;
   }
 }
+let searchTimeout = null;
 
+// Lắng nghe ô tìm kiếm UserName
+document.getElementById('searchUserName')?.addEventListener('input', function(e) {
+  const keyword = e.target.value.trim();
+  const resultsContainer = document.getElementById('userSearchResults');
+  const hiddenInput = document.getElementById('memberUserId');
+
+  // Xóa ID cũ nếu người dùng sửa đổi văn bản
+  hiddenInput.value = '';
+
+  if (keyword.length < 2) {
+    resultsContainer.style.display = 'none';
+    return;
+  }
+
+  // Chờ người dùng dừng gõ 300ms mới fetch
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`/api/users/search?q=${encodeURIComponent(keyword)}`);
+      if (!res.ok) return;
+
+      const users = await res.json();
+      
+      // Lọc bỏ những người đã là thành viên trong dự án hiện tại
+      const existingIds = (currentProject && currentProject.thanhVien) 
+        ? currentProject.thanhVien.map(m => Number(m.idUser)) 
+        : [];
+      const filteredUsers = users.filter(u => !existingIds.includes(Number(u.idUser)));
+
+      if (filteredUsers.length === 0) {
+        resultsContainer.innerHTML = `<li style="padding: 8px 12px; color: #888;">Không tìm thấy người dùng phù hợp</li>`;
+      } else {
+        resultsContainer.innerHTML = filteredUsers.map(u => `
+          <li class="search-item" data-id="${u.idUser}" data-name="${escapeHtml(u.userName)}" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;">
+            <strong>${escapeHtml(u.userName)}</strong> <small style="color:#666;">(${escapeHtml(u.email || '')})</small>
+          </li>
+        `).join('');
+      }
+
+      resultsContainer.style.display = 'block';
+    } catch (err) {
+      console.error('Lỗi tìm kiếm người dùng:', err);
+    }
+  }, 300);
+});
+
+// Xử lý sự kiện click chọn một người dùng trong danh sách gợi ý
+document.getElementById('userSearchResults')?.addEventListener('click', function(e) {
+  const item = e.target.closest('.search-item');
+  if (!item) return;
+
+  const selectedId = item.getAttribute('data-id');
+  const selectedName = item.getAttribute('data-name');
+
+  // Gán thông tin đã chọn
+  document.getElementById('memberUserId').value = selectedId;
+  document.getElementById('searchUserName').value = selectedName;
+
+  // Ẩn bảng gợi ý
+  this.style.display = 'none';
+});
+
+// Click ra ngoài thì ẩn dropdown
+document.addEventListener('click', function(e) {
+  const container = document.querySelector('.user-search-container');
+  if (container && !container.contains(e.target)) {
+    const resultsContainer = document.getElementById('userSearchResults');
+    if (resultsContainer) resultsContainer.style.display = 'none';
+  }
+}); 
+// 1. Click ra ngoài container tìm kiếm thì ẩn dropdown gợi ý
+document.addEventListener('click', (e) => {
+  const container = document.querySelector('.user-search-container');
+  const resultsContainer = document.getElementById('userSearchResults');
+  
+  if (container && !container.contains(e.target) && resultsContainer) {
+    resultsContainer.style.display = 'none';
+  }
+});
+// Hàm mở Modal tạo Task
+window.openCreateTaskModal = function() {
+  if (!currentProject) {
+    alert('Vui lòng chọn dự án trước!');
+    return;
+  }
+  openModal('createTaskModal');
+};
+
+// Xử lý Submit Form Tạo Task
+// Submit Form Tạo Task
+const createTaskForm = document.getElementById('createTaskForm');
+if (createTaskForm) {
+  createTaskForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    if (!currentProject) return alert('Chưa chọn dự án!');
+
+    const tenTask = document.getElementById('taskName').value.trim();
+    const deadLineInput = document.getElementById('taskDeadline').value;
+    const trangThai = document.getElementById('taskStatus').value;
+    const moTa = document.getElementById('taskDesc').value.trim();
+
+    let deadLine = deadLineInput ? deadLineInput.replace('T', ' ') + ':00' : null;
+
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({
+          idDuAn: currentProject.idDuAn,
+          tenTask,
+          moTa,
+          deadLine,
+          trangThai
+        })
+      });
+
+      if (res.ok) {
+        closeModal('createTaskModal');
+        createTaskForm.reset();
+        selectProject(currentProject.idDuAn); // Reload lại danh sách task
+      } else {
+        const err = await res.json();
+        alert(err.message || 'Lỗi khi tạo task');
+      }
+    } catch (err) {
+      console.error('Lỗi khi tạo task:', err);
+    }
+  });
+}
+async function fetchTasksByProject(idDuAn) {
+  try {
+    const res = await fetch(`/api/project/${idDuAn}/tasks`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch (err) {
+    console.error('Lỗi khi tải danh sách task:', err);
+    return [];
+  }
+}
 initNavbar();

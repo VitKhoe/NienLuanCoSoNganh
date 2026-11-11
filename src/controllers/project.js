@@ -1,5 +1,5 @@
 import db from '../models/db.js';
-import { HttpError, sendJson } from '../utils/helpers.js';
+import { HttpError, sendJson, readJson } from '../utils/helpers.js';
 import { requireUser } from '../utils/session.js';
 import { readObject, cleanString, toId, parseLimit } from '../utils/validate.js';
 import { addMember } from './chat.js';
@@ -217,9 +217,10 @@ export async function assignMemberRole(req, res, params) {
   sendJson(res, 200, { message: 'Cập nhật thành viên và vai trò thành công' });
 }
 export async function removeMember(req, res, params) {
+  const data = await readJson(req);
   const currentUserId = requireUser(req);
-  const idDuAn = Number(params.id);
-  const targetUserId = Number(params.userId);
+  const idDuAn = data.idDuAn; 
+  const targetUserId = data.idUser;
 
   const project = await requireProjectManager(idDuAn, currentUserId);
 

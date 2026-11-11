@@ -229,18 +229,17 @@ export function renderProjectDetail(projectData) {
     </div>
   `;
 
-  // 6. Gán sự kiện cho nút Xin tham gia (Tạm thời để trống)
   if (!isMember) {
     const btnJoin = document.getElementById('btnRequestJoinProject');
     if (btnJoin) {
-      btnJoin.addEventListener('click', async() => {
-        if (!confirm(`Bạn muốn gửi yêu cầu tham gia dự án "${projectData.tenDuAn}"?`)) return;
+      btnJoin.addEventListener('click', async(p) => {
+        if (!confirm(`Bạn muốn gửi yêu cầu tham gia dự án "${p.tenDuAn}"?`)) return;
 
         try {
           btnJoin.disabled = true;
           btnJoin.textContent = '⏳ Đang gửi...';
 
-          const res = await fetch(`/api/projects/${projectData.idDuAn}/join-request`, {
+          const res = await fetch(`/api/projects/${p.idDuAn}/join-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
           });

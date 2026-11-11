@@ -279,11 +279,10 @@ export async function assignMemberRole(idDuAn, { idUser, vaiTro }) {
   return response.json();
 }
 export async function removeMember(idDuAn, userId) {
-  const response = await request(`/api/projects/${idDuAn}/members/${userId}`, {
-    method: 'DELETE'
-  });
-  return response.json();
+  const res = await jsonRequest('DELETE', `/api/projects/rmmember`, { idDuAn : idDuAn, idUser: userId });
+  return res;
 }
+
 export async function leaveProject(idDuAn) {
   const response = await request(`/api/projects/${idDuAn}/leave`, {
     method: 'POST'
@@ -300,4 +299,37 @@ export async function reviewMember(idDuAn, { idUserDuocDanhGia, diem, nhanXet })
 export async function fetchProjects() {
   const response = await request('/api/projects');
   return response.json();
+}
+
+export async function createRecruitments(idDuAn, data) {
+  const response = await fetch(`/api/projects/${idDuAn}/recruitments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: JSON.stringify({
+      tieuDe: data?.tieuDe ? data.tieuDe.trim() : '',
+      yeuCau: data?.yeuCau ? data.yeuCau.trim() : '',
+      hanNop: data?.hanNop || null,
+      trangThai: data?.trangThai || 'not_started'
+    })
+  });
+
+  return response.json();
+}
+export async function uploadPostImage(postId, file) {
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const response = await fetch(`/api/posts/${postId}/images`, {
+    method: 'POST',
+    body: formData // Gửi dạng multipart/form-data
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || 'Lỗi khi tải ảnh lên');
+  }
+
+  // Trả về data chứa image_id và hinhAnhUrl vừa tạo thành công
+  return result.data; 
 }

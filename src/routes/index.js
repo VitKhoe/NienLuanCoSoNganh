@@ -6,6 +6,9 @@ import * as connections from '../controllers/connections.js';
 import * as chat from '../controllers/chat.js';
 import * as project from '../controllers/project.js';
 import { sendText, sendFile } from '../utils/helpers.js';
+import * as task from '../controllers/task.js';
+import * as re from '../controllers/recruitments.js';
+import * as img from '../img/callImage.js';
 
 // File tĩnh: đường dẫn URL -> [file, content-type]
 const staticFiles = {
@@ -61,12 +64,15 @@ const routes = {
   'GET /api/chats': chat.listChats,
   'POST /api/chats/private': chat.openPrivateChat,
   'POST /api/chats/group': chat.createGroupChat,
+  'GET /api/users/search': social.searchUsers,
 
   // Dự án + tuyển dụng
   'POST /api/projects': handlers.createProject,
   'POST /api/projects-nontintuyen': project.createProject,
   'GET /api/projects': project.getProjects,
-  'GET /api/tin-tuyen-dung': handlers.getJobs
+  'GET /api/tin-tuyen-dung': handlers.getJobs,
+
+  'POST /api/tasks': task.createTask
 };
 
 // API có id trong đường dẫn (":id" chỉ nhận số), VD: PUT /api/me/skills/5
@@ -105,7 +111,14 @@ const paramRoutes = [
   withId('POST', '/api/projects/:id/members', project.assignMemberRole),
   withId('POST', '/api/projects/:id/leave', project.leaveProject),
   withId('POST', '/api/projects/:id/reviews', project.reviewMember),
-  withId('POST', '/api/projects/:id/join-request', project.requestJoinProject)
+  withId('POST', '/api/projects/:id/join-request', project.requestJoinProject),
+  withId('DELETE', '/api/projects/rmmember', project.removeMember),
+  withId('GET', '/api/project/:id/tasks', task.getProjectTasks),
+  withId('POST', '/api/projects/:id/recruitments', re.createProjectRecruitments),
+  // Nhóm 4: ảnh
+  withId('GET', '/uploads/posts/:id', img.handleStaticImages),
+  withId('POST', '/api/posts/:id/images', img.savePostImage)
+  
 ]
 
 function findRoute(method, pathname) {

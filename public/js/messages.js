@@ -89,15 +89,24 @@ async function renderMessage(message) {
   if (isJoinRequest(message.noiDung)){
     const data = parseJoinRequest(message.noiDung);
     const projectId = data.idDuAn;
-    const projectData = await getProjectDetail(projectId);
+    let isTrue = true;
+    let projectData = {};
+    try {
+      projectData = await getProjectDetail(projectId);
+    } catch (error) { 
+      isTrue = false;
+      console.error('Lỗi khi lấy thông tin dự án:', error);
+    }
     const members = projectData.thanhVien || [];
     const currentUserId = message.idUser;
 
     let isMember = members.some(m => Number(m.idUser) === Number(currentUserId)) || 
                    Number(projectData.idUserTao) === Number(currentUserId);
-    if (!own) isMember = false;
+    if (!own) 
+      isMember = false;
 
-    return `
+    if (isTrue) {
+      return `
     <div class="chat-message ${isMember ? 'chat-message-own' : ''}" data-id="${message.idMessage}">
       <div class="join-request-card">
         <div class="request-header">
@@ -121,6 +130,11 @@ async function renderMessage(message) {
       </div>
       </div>
     `;
+        }else {
+          return `<div class="chat-message ${isMember ? 'chat-message-own' : ''}" data-id="${message.idMessage}">
+          <span class="chat-text">Dự án đã không còn hợp lệ</span>
+          </div>`;
+        }
   }else {
     return `
     <div class="chat-message ${own ? 'chat-message-own' : ''}" data-id="${message.idMessage}">

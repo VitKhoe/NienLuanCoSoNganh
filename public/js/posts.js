@@ -49,14 +49,38 @@ function toolsHtml(idUser) {
 
 function renderPost(post) {
   const initial = (post.tenTacGia || '?').trim().charAt(0).toUpperCase();
+  let imageIds = [];
+  if (post.imageIds) {
+    if (typeof post.imageIds === 'string') {
+      imageIds = post.imageIds.split(',').map(id => id.trim()).filter(Boolean);
+    } else if (Array.isArray(post.imageIds)) {
+      imageIds = post.imageIds;
+    }
+  } else if (Array.isArray(post.images)) {
+    imageIds = post.images;
+  }
+  // 1. Render danh sách ảnh nếu mảng post.imageIds có dữ liệu
+  let imagesHtml = '';
+  if (Array.isArray(imageIds) && imageIds.length > 0) {
+    const imgTags = imageIds.map(imageId => `
+      <div class="post-img-item" style="flex: 1 1 calc(50% - 8px); max-width: 100%;">
+        <img 
+          src="/uploads/posts/${imageId}" 
+          alt="Ảnh bài viết" 
+          class="post-img" 
+          loading="lazy"
+          style="width: 100%; height: auto; max-height: 400px; object-fit: cover; border-radius: 8px;" 
+        />
+      </div>
+    `).join('');
 
-  // Chỉ hiện ảnh khi hinhAnhUrl không null/rỗng
-  const imageHTML = post.hinhAnhUrl
-    ? `<div class="post-image">
-         <img src="${escapeHtml(post.hinhAnhUrl)}" alt="Post image">
-       </div>`
-    : '';
+    imagesHtml = `
+      <div class="post-images-grid" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;">
+        ${imgTags}
+      </div>`;
+  }
 
+  // 2. Tra vè HTML hoàn chỉnh của bài viết
   return `
     <article class="card post" data-id="${post.idPost}" data-user="${post.idUser}">
       <div class="card-body">
@@ -70,9 +94,11 @@ function renderPost(post) {
         </div>
 
         <p class="post-content">${escapeHtml(post.noiDung)}</p>
-        ${imageHTML}
 
-        <div class="post-stats text-muted">
+        <!-- Hiển thị các ảnh bài viết tại đây -->
+        ${imagesHtml}
+
+        <div class="post-stats text-muted" style="margin-top: 12px;">
           <span data-role="like-count">${post.soLike} lượt thích</span>
           <span data-role="comment-count">${post.soBinhLuan} bình luận</span>
         </div>
@@ -91,7 +117,7 @@ function renderPost(post) {
         <div class="comments" data-role="comments" hidden></div>
       </div>
     </article>`;
-}
+} 
 
 function moreHtml(posts) {
   return posts.length >= PAGE_SIZE
@@ -255,6 +281,26 @@ function bindFeed(container) {
 
 // ---------- Form đăng bài ----------
 
+/**
+ * Upload 1 file ảnh gắn với postId cụ thể
+ */
+async function uploadPostImage(postId, file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('fileName', file.name);
+
+  // Gọi đúng route với postId lấy từ Bước 1
+  const response = await fetch(`/api/posts/${postId}/images`, {
+    method: 'POST',
+    body: formData
+  });
+
+  const result = await response.json();
+  if (!response.ok || result.success === false) {
+    throw new Error(result.message || `Lỗi khi tải ảnh ${file.name}`);
+  }
+  return result;
+}
 export function initPostForm() {
   const form = document.getElementById('formCreatePost');
   if (!form) return;
@@ -263,7 +309,8 @@ export function initPostForm() {
     e.preventDefault();
 
     const noiDung = document.getElementById('noiDung').value.trim();
-    const file = document.getElementById('hinhAnhUrl').files[0];
+    const fileInput = document.getElementById('hinhAnhUrl');
+    const files = fileInput ? fileInput.files : [];
 
     if (!noiDung) {
       alert('Vui lòng nhập nội dung bài viết!');
@@ -271,14 +318,120 @@ export function initPostForm() {
     }
 
     try {
-      await createPost({ noiDung, hinhAnhUrl: file ? file.name : null });
-      alert('Đăng bài viết thành công!');
+      // 🔑 BƯỚC 1: Tạo bài viết trước để lấy idPost từ Server
+      let postResult = await createPost({ noiDung });
+      if (postResult instanceof Response) {
+      postResult = await postResult.json();
+      }
+      // Lấy idPost trả về từ response backend
+      console.log('Kết quả tạo bài viết:', postResult);
+      const postId = postResult.idPost || postResult.idBaiViet || postResult.data?.idPost;
+
+      if (!postId) {
+        throw new Error('Không nhận được ID bài viết sau khi tạo');
+      }
+
+      // 🔑 BƯỚC 2: Duyệt danh sách file ảnh và upload tuần tự bằng postId vừa có
+      if (files && files.length > 0) {
+        for (let i = 0; i < files.length; i++) {
+          await uploadPostImage(postId, files[i]);
+        }
+      }
+
+      alert('Đăng bài viết và tải ảnh thành công!');
       form.reset();
-      closeModal('createPostModal');
-      loadPosts();
+      if (typeof closeModal === 'function') closeModal('createPostModal');
+      if (typeof loadPosts === 'function') loadPosts();
+
     } catch (error) {
-      console.error('Lỗi khi gửi bài viết:', error);
-      alert(errorMessage(error));
+      console.error('Lỗi khi đăng bài:', error);
+      alert(typeof errorMessage === 'function' ? errorMessage(error) : (error.message || 'Có lỗi xảy ra'));
     }
   });
 }
+document.addEventListener('DOMContentLoaded', function() {
+  const inputHinhAnh = document.getElementById('hinhAnhUrl');
+  const previewContainer = document.getElementById('previewImages');
+
+  // Kiểm tra xem HTML có các ID này chưa để tránh lỗi
+  if (!inputHinhAnh || !previewContainer) {
+    console.error("Lỗi: Không tìm thấy input 'hinhAnhUrl' hoặc div 'previewImages' trong HTML!");
+    return;
+  }
+
+  // Bắt sự kiện khi người dùng chọn file
+  inputHinhAnh.addEventListener('change', function(e) {
+    previewContainer.innerHTML = ''; // Xóa các ảnh cũ (nếu có) khi người dùng chọn lại file
+    const files = e.target.files;
+    
+    if (files && files.length > 0) {
+      // Duyệt qua từng file đã chọn
+      Array.from(files).forEach(file => {
+        // Chỉ xử lý nếu file đó là hình ảnh
+        if (!file.type.startsWith('image/')) return;
+
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+          // Tạo thẻ <img> mới
+          const img = document.createElement('img');
+          img.src = event.target.result;
+          
+          // CSS cho ảnh đẹp hơn
+          img.style.width = '80px';
+          img.style.height = '80px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '8px';
+          img.style.border = '1px solid #ccc';
+          
+          // Đẩy ảnh vào thẻ div
+          previewContainer.appendChild(img);
+        }
+        
+        // Đọc file ảnh dưới dạng URL base64
+        reader.readAsDataURL(file);
+      });
+    }
+  });
+});
+export function initImageLightbox() {
+  const modal = document.getElementById('imageLightboxModal');
+  const modalImg = document.getElementById('lightboxImage');
+  const closeBtn = document.querySelector('.lightbox-close');
+
+  if (!modal || !modalImg) return;
+
+  // 1. Lắng nghe sự kiện click vào ảnh .post-img trong vùng chứa bài viết (Event Delegation)
+  const postsContainer = document.getElementById('postsContainer') || document.body;
+  
+  postsContainer.addEventListener('click', (e) => {
+    if (e.target && e.target.classList.contains('post-img')) {
+      modalImg.src = e.target.src;
+      modal.removeAttribute('hidden');
+      modal.style.display = 'flex';
+    }
+  });
+
+  // 2. Đóng modal khi bấm nút X hoặc bấm ra ngoài ảnh
+  const closeModalz = () => {
+    modal.setAttribute('hidden', '');
+    modal.style.display = 'none';
+    modalImg.src = '';
+  };
+
+  if (closeBtn) closeBtn.addEventListener('click', closeModalz);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModalz();
+  });
+
+  // 3. Đóng modal khi nhấn phím ESC
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hasAttribute('hidden')) {
+      closeModalz();
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initImageLightbox();
+});
