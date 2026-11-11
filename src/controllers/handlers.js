@@ -2,8 +2,6 @@ import db from '../models/db.js';
 import { HttpError, sendJson, readJson } from '../utils/helpers.js';
 import { requireUser } from '../utils/session.js';
 
-// (Đăng ký / đăng nhập: users.js  -  Bài viết, like, bình luận: social.js)
-
 // ---------- Dự án + tin tuyển dụng ----------
 export async function createProject(req, res) {
   const idUser = requireUser(req); // người đang đăng nhập
@@ -17,32 +15,26 @@ export async function createProject(req, res) {
     throw new HttpError(400, 'Tên dự án và trạng thái không được để trống');
   }
 
-  const tieuDe = data.tieuDeTuyenDung || `Tuyển thành viên tham gia dự án: ${tenDuAn}`;
-  const yeuCau = data.yeuCauTuyenDung || moTa || `Yêu cầu có chuyên môn phù hợp với dự án ${tenDuAn}.`;
-
-  // Transaction: tạo dự án và tin tuyển dụng, lỗi bước nào thì hủy cả hai
-  await db.beginTransaction();
+  // Lấy connection từ pool để thực hiện transaction an toàn
+  const conn = await db.getConnection();
   try {
-    const [duAn] = await db.query(
-      `INSERT INTO DuAn (idUserTao, tenDuAn, moTa, ngayBD, ngayKT, trangThai)
+    await conn.beginTransaction();
+    const [duAn] = await conn.query(
+      `INSERT INTO duan (idUserTao, tenDuAn, moTa, ngayBD, ngayKT, trangThai)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [idUser, tenDuAn, moTa, ngayBD, ngayKT, trangThai]
     );
 
-    // const [tin] = await db.query(
-    //   `INSERT INTO TinTuyenDung (idUser, idDuAN, tieuDe, yeuCau, hanNop, trangThai)
-    //    VALUES (?, ?, ?, ?, ?, ?)`,
-    //   [idUser, duAn.insertId, tieuDe, yeuCau, ngayKT, 'Đang tuyển']
-    // );
-
-    await db.commit();
+    await conn.commit();
     sendJson(res, 201, {
-      message: 'Tạo dự án và tin tuyển dụng thành công',
+      message: 'Tạo dự án thành công',
       idDuAn: duAn.insertId
     });
   } catch (err) {
-    await db.rollback();
+    await conn.rollback();
     throw err;
+  } finally {
+    conn.release();
   }
 }
 
@@ -50,8 +42,8 @@ export async function getJobs(req, res) {
   const [rows] = await db.query(
     `SELECT t.idTinTuyen, t.idUser, t.idDuAN, t.tieuDe, t.yeuCau,
             t.hanNop, t.trangThai, d.tenDuAn
-     FROM TinTuyenDung t
-     LEFT JOIN DuAn d ON t.idDuAN = d.idDuAn
+     FROM tintuyendung t
+     LEFT JOIN duan d ON t.idDuAN = d.idDuAn
      ORDER BY t.idTinTuyen DESC`
   );
   sendJson(res, 200, rows);

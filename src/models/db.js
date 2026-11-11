@@ -1,20 +1,31 @@
 import mysql from 'mysql2';
 
-const connection = mysql.createConnection({
-  host: 'localhost',
-  port: 3306,
-  user: 'root',
-  password: '1234',
-  database: 'csdl2'
+// Tự động nạp file .env nếu có (Node.js 20.12+)
+try {
+  process.loadEnvFile?.();
+} catch {}
+
+const pool = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : '1234',
+  database: process.env.DB_NAME || 'csdl2',
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  charset: 'utf8mb4'
 });
 
-connection.connect((err) => {
+// Kiểm tra kết nối ban đầu
+pool.getConnection((err, conn) => {
   if (err) {
-    console.log('Lỗi kết nối SQL:', err.message);
+    console.warn('⚠️ Cảnh báo kết nối MySQL:', err.message);
+    console.warn('   Hãy đảm bảo MySQL đang chạy và kiểm tra lại thông tin cấu hình trong .env');
     return;
   }
-  console.log('Đã kết nối SQL');
+  console.log('✅ Đã kết nối MySQL qua Connection Pool thành công.');
+  conn.release();
 });
 
-// Dùng dạng promise để viết async/await cho gọn
-export default connection.promise();
+export default pool.promise();

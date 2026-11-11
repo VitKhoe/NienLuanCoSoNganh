@@ -1,8 +1,14 @@
 import createServer from './routes/index.js';
 
-const port = 8088;
+// Tự động tải biến môi trường từ file .env nếu có
+try {
+  process.loadEnvFile?.();
+} catch {}
 
-createServer().listen(port, () => { 
-  console.log(`Server chạy tại http://localhost:${port}`);
+const port = Number(process.env.PORT) || 8088;
+
+createServer().listen(port, () => {
+  console.log('==================================================');
+  console.log(`🚀 Server đang chạy tại: http://localhost:${port}`);
+  console.log('==================================================');
 });
-

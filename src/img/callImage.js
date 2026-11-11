@@ -1,10 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import  db  from '../models/db.js'; // Connection MySQL của bạn
-import {requireUser} from '../utils/session.js'; // Hàm kiểm tra đăng nhập
+import db from '../models/db.js';
+import { requireUser } from '../utils/session.js';
 
 /**
- * Lưu ảnh upload vào thư mục và ghi đường dẫn vào CSDL
+ * Tách dữ liệu multipart/form-data thủ công bằng Stream Buffer
  */
 function parseMultipartData(req) {
   return new Promise((resolve, reject) => {
@@ -14,18 +14,15 @@ function parseMultipartData(req) {
       const buffer = Buffer.concat(chunks);
       const contentType = req.headers['content-type'] || '';
 
-      // 1. Tìm boundary string trong Content-Type header
       const match = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
       if (!match) return resolve(null);
 
       const boundary = match[1] || match[2];
       const boundaryBuffer = Buffer.from(`--${boundary}`);
 
-      // 2. Tìm tên file gốc (original filename) trong header multipart
       const filenameMatch = buffer.toString('binary').match(/filename="([^"]+)"/);
       const fileName = filenameMatch ? filenameMatch[1] : 'image.jpg';
 
-      // 3. X định vị trí bắt đầu và kết thúc của dữ liệu nhị phân file ảnh (\r\n\r\n)
       const headerEndIndex = buffer.indexOf('\r\n\r\n');
       if (headerEndIndex === -1) return resolve(null);
 
@@ -34,9 +31,7 @@ function parseMultipartData(req) {
 
       if (dataStart >= dataEnd) return resolve(null);
 
-      // Cắt lấy Buffer nhị phân file ảnh thực tế
       const fileBuffer = buffer.subarray(dataStart, dataEnd);
-
       resolve({ fileBuffer, fileName });
     });
 
@@ -44,23 +39,19 @@ function parseMultipartData(req) {
   });
 }
 
+/**
+ * Lưu ảnh upload vào thư mục uploads/posts (nằm ngoài src để tránh node --watch restart)
+ */
 export async function savePostImage(req, res, params) {
   try {
     const postId = params.id;
-
-    // 1. Kiểm tra đăng nhập
     const userId = requireUser(req);
-    if (!userId) {
-      res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-      return res.end(JSON.stringify({ message: 'Người dùng chưa đăng nhập hoặc phiên làm việc hết hạn' }));
-    }
 
     if (!postId) {
       res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       return res.end(JSON.stringify({ message: 'Thiếu thông tin postId' }));
     }
 
-    // 2. 🔑 TỰ ĐỘNG PARSE BUFFER NẾU REQ CHƯA CÓ FILEBUFFER
     let fileBuffer = req.fileBuffer || req.body?.fileBuffer;
     let originalName = req.fileName || req.body?.fileName;
 
@@ -72,35 +63,29 @@ export async function savePostImage(req, res, params) {
       }
     }
 
-    // 3. Kiểm tra fileBuffer sau khi parse
     if (!fileBuffer || fileBuffer.length === 0) {
       res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
       return res.end(JSON.stringify({ message: 'Không tìm thấy dữ liệu file ảnh' }));
     }
 
-    // 4. Tạo thư mục vật lý lưu file ảnh
-    const uploadDir = path.join(process.cwd(), 'src', 'img', 'uploads', 'posts');
+    // Thư mục lưu ảnh đặt tại uploads/posts (thư mục gốc)
+    const uploadDir = path.join(process.cwd(), 'uploads', 'posts');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // 5. Tạo tên file duy nhất tránh trùng lặp
     const ext = path.extname(originalName || '') || '.jpg';
     const fileName = `img_${postId}_${Date.now()}_${Math.round(Math.random() * 1e4)}${ext}`;
     const absolutePath = path.join(uploadDir, fileName);
-
     const relativeUrl = `/uploads/posts/${fileName}`;
 
-    // 6. Ghi file nhị phân vào ổ đĩa
     await fs.promises.writeFile(absolutePath, fileBuffer);
 
-    // 7. Chèn dữ liệu vào bảng `image` trong MySQL
     const [result] = await db.query(
-      `INSERT INTO image (user_id, post_id, hinhAnhUrl) VALUES (?, ?, ?)`,
+      'INSERT INTO image (user_id, post_id, hinhAnhUrl) VALUES (?, ?, ?)',
       [Number(userId), Number(postId), relativeUrl]
     );
 
-    // 8. Trả về phản hồi thành công
     res.writeHead(201, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify({
       success: true,
@@ -115,71 +100,73 @@ export async function savePostImage(req, res, params) {
 
   } catch (error) {
     console.error('Lỗi khi lưu ảnh bài viết:', error);
-    
     if (!res.headersSent) {
       res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-      return res.end(JSON.stringify({ message: error.message || 'Lỗi máy chủ nội bộ khi lưu ảnh' }));
+      return res.end(JSON.stringify({ message: error.message || 'Lỗi máy chủ khi lưu ảnh' }));
     }
   }
 }
+
+/**
+ * Phục vụ ảnh tĩnh an toàn: hỗ trợ cả tìm theo image_id số HOẶC tên file ảnh
+ */
 export async function handleStaticImages(req, res, params) {
   try {
-    // Lấy id từ params do router truyền vào
-    const imageId = params.id;
-
-    if (!imageId) {
+    const identifier = params.id;
+    if (!identifier) {
       res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-      return res.end(JSON.stringify({ message: 'Thiếu ID ảnh' }));
+      return res.end(JSON.stringify({ message: 'Thiếu định danh ảnh' }));
     }
 
-    // 1. Truy vấn database lấy hinhAnhUrl từ bảng image
-    // Tuỳ thuộc vào thư viện DB bạn dùng (mysql2, Sequelize,...), cú pháp query có thể khác đôi chút.
-    // Dưới đây là cú pháp mẫu dùng thư viện mysql2 (promise)
-    const [rows] = await db.query('SELECT hinhAnhUrl FROM image WHERE image_id = ?', [imageId]);
+    let fileName = '';
 
-    if (rows.length === 0 || !rows[0].hinhAnhUrl) {
-      res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
-      return res.end(JSON.stringify({ message: 'Không tìm thấy dữ liệu ảnh trong CSDL' }));
+    // Nếu identifier là số nguyên thuần túy -> truy vấn DB theo image_id
+    if (/^\d+$/.test(identifier)) {
+      const [rows] = await db.query('SELECT hinhAnhUrl FROM image WHERE image_id = ?', [identifier]);
+      if (rows.length === 0 || !rows[0].hinhAnhUrl) {
+        res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+        return res.end(JSON.stringify({ message: 'Không tìm thấy dữ liệu ảnh trong CSDL' }));
+      }
+      fileName = path.basename(rows[0].hinhAnhUrl);
+    } else {
+      // Identifier chính là tên file (chống Directory Traversal)
+      fileName = path.basename(identifier);
     }
 
-    const hinhAnhUrl = rows[0].hinhAnhUrl;
-
-    // 2. Tạo đường dẫn an toàn đến file thực tế
-    // Dùng path.basename() để chỉ lấy tên file cuối cùng (VD: 'abc.png'),
-    // giúp chống lại lỗi bảo mật Directory Traversal nếu hinhAnhUrl chứa '../'
-    const fileName = path.basename(hinhAnhUrl);
-    const filePath = path.join(process.cwd(),'src', 'img', 'uploads', 'posts', fileName);
-    console.log('Đường dẫn file ảnh:', filePath);
-    // 3. Kiểm tra file có tồn tại trong ổ cứng không
-    fs.access(filePath, fs.constants.F_OK, (err) => {
-      if (err) {
+    // Kiểm tra file ở thư mục uploads/posts (hoặc fallback ở src/img/uploads/posts)
+    let filePath = path.join(process.cwd(), 'uploads', 'posts', fileName);
+    if (!fs.existsSync(filePath)) {
+      const fallbackPath = path.join(process.cwd(), 'src', 'img', 'uploads', 'posts', fileName);
+      if (fs.existsSync(fallbackPath)) {
+        filePath = fallbackPath;
+      } else {
         res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify({ message: 'Không tìm thấy file ảnh trên hệ thống' }));
       }
+    }
 
-      // Set MIME type tương ứng
-      const ext = path.extname(filePath).toLowerCase();
-      const mimeTypes = {
-        '.jpg':  'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png':  'image/png',
-        '.gif':  'image/gif',
-        '.webp': 'image/webp'
-      };
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeTypes = {
+      '.jpg':  'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png':  'image/png',
+      '.gif':  'image/gif',
+      '.webp': 'image/webp',
+      '.svg':  'image/svg+xml'
+    };
 
-      res.writeHead(200, {
-        'Content-Type': mimeTypes[ext] || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=86400' // Cho phép cache 1 ngày
-      });
-
-      // Stream trực tiếp dữ liệu file ra response
-      fs.createReadStream(filePath).pipe(res);
+    res.writeHead(200, {
+      'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+      'Cache-Control': 'public, max-age=86400'
     });
 
-    return true;
+    fs.createReadStream(filePath).pipe(res);
+
   } catch (error) {
     console.error('Lỗi khi lấy ảnh:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-    return res.end(JSON.stringify({ message: 'Lỗi server nội bộ' }));
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ message: 'Lỗi server nội bộ' }));
+    }
   }
 }

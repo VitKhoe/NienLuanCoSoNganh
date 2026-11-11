@@ -61,12 +61,6 @@ export async function createProject(req, res) {
       [idUser, tenDuAn, moTa, ngayBD, ngayKT, trangThai]
     );
 
-    // IN DỮ LIỆU KIỂM TRA TRỰC TIẾP
-    console.log('--- DEBUG KẾT QUẢ INSERT ---');
-    console.log('insertResult:', insertResult);
-    console.log('idDuAn vừa tạo (insertResult.insertId):', insertResult?.insertId);
-    console.log('---------------------------');
-
     // Lấy ID vừa tạo
     const idDuAnVuaTao = insertResult.insertId;
 

@@ -5,8 +5,9 @@ import { fileURLToPath } from 'url';
 // ES module không có __dirname nên tự tạo
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Thư mục chứa file giao diện (index.html, style.css...)
+// Thư mục gốc chứa file giao diện
 const ROOT_DIR = path.join(__dirname, '..', '..');
+
 export class HttpError extends Error {
   constructor(status, message) {
     super(message);
@@ -32,17 +33,35 @@ export function sendFile(res, filePath, contentType) {
   });
 }
 
-// Đọc body và parse JSON, sai định dạng thì ném lỗi 400
-export function readJson(req) {
+// Đọc body và parse JSON với giới hạn dung lượng để phòng ngừa DoS
+export function readJson(req, maxSizeBytes = 2 * 1024 * 1024) { // Mặc định tối đa 2MB
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk) => { body += chunk; });
+    let size = 0;
+
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > maxSizeBytes) {
+        req.destroy();
+        reject(new HttpError(413, 'Dữ liệu gửi lên vượt quá giới hạn cho phép (tối đa 2MB)'));
+        return;
+      }
+      body += chunk;
+    });
+
     req.on('end', () => {
+      if (!body.trim()) {
+        return resolve({});
+      }
       try {
         resolve(JSON.parse(body));
       } catch {
         reject(new HttpError(400, 'Dữ liệu gửi lên không đúng định dạng JSON'));
       }
+    });
+
+    req.on('error', (err) => {
+      reject(new HttpError(400, err.message || 'Lỗi đọc dữ liệu yêu cầu'));
     });
   });
 }

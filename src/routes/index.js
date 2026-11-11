@@ -116,7 +116,7 @@ const paramRoutes = [
   withId('GET', '/api/project/:id/tasks', task.getProjectTasks),
   withId('POST', '/api/projects/:id/recruitments', re.createProjectRecruitments),
   // Nhóm 4: ảnh
-  withId('GET', '/uploads/posts/:id', img.handleStaticImages),
+  { method: 'GET', pattern: /^\/uploads\/posts\/([^/]+)$/, handler: img.handleStaticImages },
   withId('POST', '/api/posts/:id/images', img.savePostImage)
   
 ]

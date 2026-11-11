@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment Variables
+.env
+.env.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor & OS temporary files
+.DS_Store
+Thumbs.db
+~$*.docx
+*.bak
+*.tmp
+.vscode/
+.idea/
+*tempCodeRunnerFile*
