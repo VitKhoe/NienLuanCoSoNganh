@@ -9,6 +9,6 @@ const port = Number(process.env.PORT) || 8088;
 
 createServer().listen(port, () => {
   console.log('==================================================');
-  console.log(`🚀 Server đang chạy tại: http://localhost:${port}`);
+  console.log(`Server đang chạy tại: http://localhost:${port}`);
   console.log('==================================================');
 });

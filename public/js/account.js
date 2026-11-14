@@ -3,6 +3,7 @@
 import {
   ensureLoggedIn,
   updateProfile,
+  uploadAvatar,
   fetchSkills,
   addSkill,
   updateSkill,
@@ -29,13 +30,19 @@ const LEVEL_LABELS = {
 function renderAvatar(avatar, name) {
   const box = getEl('avatarPreview');
   box.textContent = (name || '?').trim().charAt(0).toUpperCase();
-  if (!avatar) return;
+
+  // Chỉ tải ảnh khi là URL hợp lệ (http/https) hoặc đường dẫn uploads;
+  // bỏ qua tên file placeholder như "link_avatar_admin.jpg" để tránh lỗi 404.
+  if (!avatar || !/^(https?:\/\/|\/uploads\/)/i.test(avatar)) return;
 
   const img = new Image();
   img.alt = 'Avatar';
   img.addEventListener('load', () => {
     box.textContent = '';
     box.appendChild(img);
+  });
+  img.addEventListener('error', () => {
+    box.textContent = (name || '?').trim().charAt(0).toUpperCase();
   });
   img.src = avatar;
 }
@@ -45,6 +52,7 @@ function fillProfile(profile) {
   getEl('profileEmail').textContent = profile.email;
   getEl('HovaTen').value = profile.HovaTen || '';
   getEl('avatar').value = profile.avatar || '';
+  getEl('anhBia').value = profile.anhBia || '';
   getEl('SDT').value = profile.SDT || '';
   getEl('tieuSu').value = profile.tieuSu || '';
   renderAvatar(profile.avatar, profile.HovaTen);
@@ -61,6 +69,7 @@ function initProfileForm() {
       const profile = await updateProfile({
         HovaTen: getEl('HovaTen').value,
         avatar: getEl('avatar').value,
+        anhBia: getEl('anhBia').value,
         SDT: getEl('SDT').value,
         tieuSu: getEl('tieuSu').value
       });
@@ -68,6 +77,29 @@ function initProfileForm() {
       showMessage(message, 'Đã lưu hồ sơ.', 'success');
     } catch (error) {
       showMessage(message, errorMessage(error), 'error');
+    }
+  });
+}
+
+// Upload ảnh đại diện: chọn file -> tải lên -> điền vào ô avatar + xem trước
+function initAvatarUpload() {
+  const fileInput = getEl('avatarFile');
+  if (!fileInput) return;
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showMessage(getEl('profileMessage'), 'Vui lòng chọn file ảnh.', 'error');
+      return;
+    }
+    try {
+      const url = await uploadAvatar(file);
+      getEl('avatar').value = url;
+      renderAvatar(url, getEl('HovaTen').value);
+      showMessage(getEl('profileMessage'), 'Đã tải ảnh lên. Nhấn "Lưu hồ sơ" để hoàn tất.', 'success');
+    } catch (error) {
+      showMessage(getEl('profileMessage'), error.message || 'Không thể tải ảnh lên.', 'error');
     }
   });
 }
@@ -201,6 +233,7 @@ async function init() {
 initNavbar();
 initProfileForm();
 initSkillForm();
+initAvatarUpload();
 init().catch((error) => {
   console.error('Lỗi khi tải trang tài khoản:', error);
   showMessage(getEl('profileMessage'), 'Không thể tải thông tin tài khoản.', 'error');

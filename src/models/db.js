@@ -25,6 +25,7 @@ pool.getConnection((err, conn) => {
     return;
   }
   console.log('✅ Đã kết nối MySQL qua Connection Pool thành công.');
+
   conn.release();
 });
 

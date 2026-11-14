@@ -1,21 +1,18 @@
 // Tin tuyển dụng: hiển thị danh sách (bảng TinTuyenDung) lên tường
 
-import { fetchJobs , createRecruitments} from './api.js';
-import { escapeHtml, formatDate } from './ui.js';
+import { fetchJobs , createRecruitments, applyRecruitment, getApplications, reviewApplication, saveRecruitment, unsaveRecruitment } from './api.js';
+import { escapeHtml, formatDate, formatDateTime } from './ui.js';
 
 // Tạo HTML cho một tin tuyển dụng
-function renderJob(item) {
+export function renderJob(item) {
   const hanNopText = item.hanNop ? formatDate(item.hanNop) : 'Không giới hạn';
-  console.log('renderJob item:', item);
-  const jobdata = {
-    idDuAn: item.idDuAN || '',
-    tenDuAn: item.tenDuAn || ''
-  }
+  const postedText = item.created_at ? formatDateTime(item.created_at) : '';
   return `
     <div class="card card-job">
       <div class="card-body">
         <div class="job-top">
           <span class="badge">Tuyển dụng dự án</span>
+          ${postedText ? `<small class="text-muted">Đăng: ${postedText}</small>` : ''}
           <small class="text-muted">Hạn nộp: ${hanNopText}</small>
         </div>
 
@@ -28,13 +25,83 @@ function renderJob(item) {
           <strong>Yêu cầu công việc:</strong>
           <p>${escapeHtml(item.yeuCau)}</p>
         </div>
-        <button class="btn btn-outline-success btn-sm" id="btnRequestJoinProject" data-id="${escapeHtml(item.idDuAN || '')}" onclick="joinProject(${item.idDuAN})">
-               🙋‍♂️ Xin tham gia dự án
-             </button>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          <button class="btn btn-outline-success btn-sm" onclick="joinProject(${item.idDuAN})">🙋‍♂️ Xin tham gia dự án</button>
+          ${Number(localStorage.getItem('currentUserId')) === Number(item.idUser)
+            ? `<button class="btn btn-outline-primary btn-sm" onclick="viewApplications(${item.idTinTuyen})">👥 Xem đơn ứng tuyển</button>`
+            : `<button class="btn btn-outline-primary btn-sm" onclick="applyJob(${item.idTinTuyen})">📨 Ứng tuyển</button>`}
+          <button class="btn btn-outline-warning btn-sm" onclick="toggleSaveJob(${item.idTinTuyen}, this)">🔖 Lưu tin</button>
+        </div>
        </div>
     </div>`;
 }
 window.joinProject = joinProject; // Đảm bảo hàm joinProject có thể được gọi từ HTML
+
+// ---- Ứng tuyển, lưu tin, xem đơn (Nhóm 3) ----
+window.applyJob = async function(idTinTuyen) {
+  const loiNhan = prompt('Lời nhắn gửi nhà tuyển dụng (tùy chọn):') || '';
+  try {
+    const r = await applyRecruitment(idTinTuyen, loiNhan);
+    alert(r.message || 'Đã nộp đơn ứng tuyển');
+  } catch (e) { alert(e.message || 'Lỗi khi ứng tuyển'); }
+};
+
+window.toggleSaveJob = async function(idTinTuyen, btn) {
+  try {
+    if (btn.dataset.saved === '1') {
+      await unsaveRecruitment(idTinTuyen);
+      btn.dataset.saved = '0';
+      btn.textContent = '🔖 Lưu tin';
+    } else {
+      await saveRecruitment(idTinTuyen);
+      btn.dataset.saved = '1';
+      btn.textContent = '✅ Đã lưu';
+    }
+  } catch (e) { alert(e.message || 'Lỗi khi lưu tin'); }
+};
+
+window.viewApplications = async function(idTinTuyen) {
+  try {
+    const list = await getApplications(idTinTuyen);
+    document.getElementById('applicationsModal')?.remove();
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.id = 'applicationsModal';
+    modal.dataset.idTin = idTinTuyen;
+    modal.innerHTML = `
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <h5 class="modal-title">👥 Đơn ứng tuyển (${list.length})</h5>
+          <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+        </div>
+        <div class="modal-body" style="max-height:400px;overflow:auto;">
+          ${list.length ? list.map((a) => `
+            <div style="border:1px solid #e0e0e0;border-radius:6px;padding:10px;margin-bottom:8px;">
+              <strong>${escapeHtml(a.tenNguoiDung)}</strong> <small>(${escapeHtml(a.email)})</small>
+              <span class="badge">${a.trangThai}</span>
+              ${a.loiNhan ? `<div style="font-size:13px;color:#555;">${escapeHtml(a.loiNhan)}</div>` : ''}
+              ${a.trangThai === 'Pending' ? `
+                <div style="margin-top:6px;display:flex;gap:6px;">
+                  <button class="btn btn-xs btn-success" onclick="reviewApp(${a.idUngTuyen}, 'Accepted')">✅ Duyệt</button>
+                  <button class="btn btn-xs btn-danger" onclick="reviewApp(${a.idUngTuyen}, 'Rejected')">❌ Từ chối</button>
+                </div>` : ''}
+            </div>`).join('') : '<i>Chưa có đơn ứng tuyển nào.</i>'}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  } catch (e) { alert(e.message || 'Lỗi khi tải đơn ứng tuyển'); }
+};
+
+window.reviewApp = async function(idUngTuyen, trangThai) {
+  try {
+    await reviewApplication(idUngTuyen, trangThai);
+    const modal = document.getElementById('applicationsModal');
+    const idTin = Number(modal?.dataset.idTin);
+    modal?.remove();
+    if (idTin) viewApplications(idTin);
+  } catch (e) { alert(e.message || 'Lỗi khi duyệt đơn'); }
+};
 export async function loadRecruitments() {
   const container = document.getElementById('recruitmentContainer');
   if (!container) return;

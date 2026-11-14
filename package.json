@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "init-db": "node scripts/init-database.mjs"
   },
   "dependencies": {
     "mysql2": "^3.24.6"

@@ -4,12 +4,29 @@
  */
 
 import { initNavbar } from './navbar.js';
-import {  ensureLoggedIn, getProjectDetail, fetchProjects, removeMember, createProjectNon_TT} from './api.js';
+import {  ensureLoggedIn, 
+  getProjectDetail, 
+  fetchProjects, 
+  removeMember, 
+  createProjectNon_TT, 
+  fetchProjectDocuments,  
+  addProjectDocument, 
+  deleteProjectDocument,
+  updateTask,
+  deleteTask,
+  assignTask,
+  getTaskComments,
+  addTaskComment,
+  getTaskFiles,
+  uploadTaskFile,
+  createTaskReminder} from './api.js';
 import {createRecruitment} from './recruitments.js';
+//import { closeModal } from './ui.js';
 // Biến lưu trữ trạng thái ứng dụng
 let currentUserId = localStorage.getItem('currentUserId') ? Number(localStorage.getItem('currentUserId')) : null;
 let currentProject = null;
 let projectsListCache = [];
+let currentTasks = [];
 
 // ==========================================
 // 1. KHI TRANG LOAD XONG (INITIALIZATION)
@@ -155,6 +172,21 @@ function initSearchEvent() {
     renderProjectList(filtered);
   });
 }
+//bật tắt sidebar
+document.querySelector('.sidebar-toggle').addEventListener('click', () => {
+  document.querySelector('.project-sidebar').hidden = true;
+  const panel = document.getElementById('sidebarToggleOpen');
+  if (panel) {
+    panel.hidden = false;
+  }
+});
+document.getElementById('sidebarToggleOpen').addEventListener('click', () => {
+  document.querySelector('.project-sidebar').hidden = false;
+  const panel = document.getElementById('sidebarToggleOpen');
+  if (panel) {
+    panel.hidden = true;
+  }
+});
 
 // ==========================================
 // 4. HIỂN THỊ CHI TIẾT DỰ ÁN (CỘT PHẢI)
@@ -171,6 +203,7 @@ window.selectProject = async function(idDuAn) {
       fetchTasksByProject(idDuAn)
     ]);
     renderProjectDetail(res, tasksData);
+    loadProjectDocuments(idDuAn, isMemberOfProject(res, currentUserId));
     panel.addEventListener('click', (e) => {
     // Kiểm tra nút được click có matcher class/id mong muốn không
     if (e.target.closest('#btnOpenRecruitmentModal')) {
@@ -178,6 +211,7 @@ window.selectProject = async function(idDuAn) {
       openModal('recruitmentModal');
     }
   });
+
   } catch (err) {
     console.error(err);
     panel.innerHTML = `<div class="empty-state"><p>❌ Lỗi khi tải dữ liệu dự án.</p></div>`;
@@ -200,11 +234,93 @@ function isMemberOfProject(project, userId) {
 
   return isOwner || isMember;
 }
+function getDocBadge(type) {
+  const map = {
+    folder: '📁 Thư mục Drive',
+    document: '📄 Google Docs',
+    spreadsheet: '📊 Google Sheets',
+    presentation: '📽️ Google Slides',
+    pdf_or_other: '📎 Tệp Drive'
+  };
+  return map[type] || map.pdf_or_other;
+}
+
+// 1. Hàm thuần render bảng HTML
+function renderVanKienTable(documents, { idDuAn, isOwner = false } = {}) {
+  if (!Array.isArray(documents) || documents.length === 0) {
+    return `
+      <p style="color: #888; font-style: italic; padding: 12px; background: #f9f9f9; border-radius: 6px;">
+        Chưa có văn kiện Google Drive nào được gắn vào dự án.
+      </p>`;
+  }
+
+  const currentUserId = Number(localStorage.getItem('currentUserId'));
+
+  const rowsHtml = documents.map(doc => `
+    <tr style="border-bottom: 1px solid #eee;">
+      <td style="padding: 10px; white-space: nowrap;">${escapeHtml(doc.so_ky_hieu || '—')}</td>
+      <td style="padding: 10px;">
+        <strong>${escapeHtml(doc.tieu_de)}</strong>
+        ${doc.ghi_chu ? `<div style="font-size: 12px; color: #777;">${escapeHtml(doc.ghi_chu)}</div>` : ''}
+      </td>
+      <td style="padding: 10px; white-space: nowrap;">${escapeHtml(doc.loai_tai_lieu)}</td>
+      <td style="padding: 10px; white-space: nowrap;">${escapeHtml(doc.nguoiDang || '')}</td>
+      <td style="padding: 10px; text-align: right; white-space: nowrap;">
+        <a href="${escapeHtml(doc.drive_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-outline" style="text-decoration: none;">
+          Mở Drive ↗
+        </a>
+        ${(isOwner || Number(doc.user_id) === currentUserId) ? `
+          <button type="button" class="btn btn-xs btn-danger" onclick="handleDeleteDocument(${doc.van_kien_id}, ${idDuAn}, ${isOwner})" title="Gỡ liên kết">✕</button>
+        ` : ''}
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+    <div style="overflow-x: auto; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+        <thead style="background: #f1f3f5; border-bottom: 1px solid #dee2e6;">
+          <tr>
+            <th style="padding: 10px;">Số hiệu</th>
+            <th style="padding: 10px;">Tên văn kiện</th>
+            <th style="padding: 10px;">Loại</th>
+            <th style="padding: 10px;">Người gắn</th>
+            <th style="padding: 10px; text-align: right;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// 2. Hàm gọi API lấy danh sách văn kiện có idDuAn trùng với dự án và render đè vào container
+async function loadProjectDocuments(idDuAn, isOwner = false) {
+  const container = document.getElementById('projectDocumentsContainer');
+  const countBadge = document.getElementById('docCountBadge');
+  if (!container) return;
+
+  try {
+    const res = await fetchProjectDocuments(idDuAn);
+    const documents = Array.isArray(res) ? res : (res?.data || []);
+
+    if (countBadge) {
+      countBadge.textContent = `📂 Văn kiện & Tài liệu dự án (${documents.length})`;
+    }
+
+    container.innerHTML = renderVanKienTable(documents, { idDuAn, isOwner });
+  } catch (err) {
+    console.error('Lỗi tải văn kiện dự án:', err);
+    container.innerHTML = `<p style="color: #dc3545; font-size: 13px;">Không thể tải danh sách văn kiện.</p>`;
+  }
+}
 function renderProjectDetail(p, tasks = []) {
   const panel = document.getElementById('projectDetailPanel');
   if (!panel) return;
+  currentTasks = tasks;
 
-  const isOwner = Number(p.idUserTao) === Number(localStorage.getItem('currentUserId'));
+  const currentUserId = Number(localStorage.getItem('currentUserId'));
+  const isOwner = Number(p.idUserTao) === currentUserId;
   const isCompleted = p.trangThai === 'completed';
 
   panel.innerHTML = `
@@ -226,8 +342,8 @@ function renderProjectDetail(p, tasks = []) {
         ➕ Tạo công việc mới
       </button>
       <button id="btnOpenRecruitmentModal" class="btn btn-primary">
-    📢 Đăng tin tuyển dụng
-    </button>
+        📢 Đăng tin tuyển dụng
+      </button>
     </div>
 
     <div class="project-detail-body">
@@ -236,8 +352,19 @@ function renderProjectDetail(p, tasks = []) {
         <p><strong>Ngày bắt đầu:</strong> ${p.ngayBD || '--/--/----'} | <strong>Ngày kết thúc:</strong> ${p.ngayKT || '--/--/----'}</p>
       </div>
 
+      <!-- 📂 KHU VỰC VĂN KIỆN DỰ ÁN -->
+      <div class="project-documents-section" style="margin-top: 24px;">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h4 id="docCountBadge">📂 Văn kiện & Tài liệu dự án (0)</h4>
+          <button type="button" class="btn btn-sm btn-primary" onclick="toggleAddDocumentForm()">
+            + Gắn link Google Drive
+          </button>
+        </div>
+        <div id="projectDocumentsContainer"></div>
+      </div>
+
       <!-- KHU VỰC THÀNH VIÊN DỰ ÁN -->
-      <div class="project-members-section">
+      <div class="project-members-section" style="margin-top: 24px;">
         <div class="section-header">
           <h4>👥 Thành viên dự án (${(p.thanhVien || []).length})</h4>
           ${isOwner ? `<button class="btn btn-sm btn-primary" onclick="openAddMemberModal()">+ Thêm / Phân quyền</button>` : ''}
@@ -264,7 +391,7 @@ function renderProjectDetail(p, tasks = []) {
         </ul>
       </div>
 
-      <!-- 🔑 KHU VỰC DANH SÁCH TASK MỚI THÊM -->
+      <!-- KHU VỰC DANH SÁCH TASK -->
       <div class="project-tasks-section" style="margin-top: 24px;">
         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <h4>📋 Danh sách công việc (${tasks.length})</h4>
@@ -286,7 +413,6 @@ function renderProjectDetail(p, tasks = []) {
                       </span>
                     </div>
 
-                    <!-- Hiển thị danh sách người thực hiện hoặc null -->
                     <div style="font-size: 13px; color: #555; margin-top: 6px;">
                       👤 <strong>Người thực hiện:</strong> 
                       ${assignedList && assignedList.length > 0 
@@ -311,11 +437,207 @@ function renderProjectDetail(p, tasks = []) {
           </div>
         `}
       </div>
-
     </div>
   `;
 }
+window.toggleAddDocumentForm = function() {
+  openModal('addDocumentModal');
+};
+window.openTaskDetailModal = async function(idTask) {
+  const task = currentTasks.find((t) => t.idTask === idTask);
+  if (!task) return alert('Không tìm thấy công việc');
 
+  const members = currentProject?.thanhVien || [];
+  const assignedIds = (task.assignedUsers || []).map((u) => (typeof u === 'object' ? u.idUser : u));
+  const dl = task.deadLine ? String(task.deadLine).slice(0, 16) : '';
+
+  document.getElementById('taskDetailModal')?.remove();
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.id = 'taskDetailModal';
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h5 class="modal-title">📌 Chi tiết công việc</h5>
+        <button type="button" class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Tên công việc</label>
+          <input type="text" id="tdTenTask" class="form-control" value="${escapeHtml(task.tenTask)}">
+        </div>
+        <div class="form-group">
+          <label>Mô tả</label>
+          <textarea id="tdMoTa" class="form-control" rows="2">${escapeHtml(task.moTa || '')}</textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Hạn chót</label>
+            <input type="datetime-local" id="tdDeadLine" class="form-control" value="${dl}">
+          </div>
+          <div class="form-group">
+            <label>Độ ưu tiên</label>
+            <select id="tdUuTien" class="form-control">
+              <option value="Gap" ${task.uuTien === 'Gap' ? 'selected' : ''}>Gấp</option>
+              <option value="Cao" ${task.uuTien === 'Cao' ? 'selected' : ''}>Cao</option>
+              <option value="Thap" ${task.uuTien === 'Thap' ? 'selected' : ''}>Thấp</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Trạng thái</label>
+          <select id="tdTrangThai" class="form-control">
+            <option value="Todo" ${task.trangThai === 'Todo' ? 'selected' : ''}>Cần làm</option>
+            <option value="Doing" ${task.trangThai === 'Doing' ? 'selected' : ''}>Đang làm</option>
+            <option value="Done" ${task.trangThai === 'Done' ? 'selected' : ''}>Hoàn thành</option>
+          </select>
+        </div>
+
+        <hr>
+        <h6>👥 Phân công (chọn thành viên)</h6>
+        <div style="max-height:120px;overflow:auto;">
+          ${members.map((m) => `
+            <label style="display:block;margin:2px 0;">
+              <input type="checkbox" value="${m.idUser}" ${assignedIds.includes(Number(m.idUser)) ? 'checked' : ''}> ${escapeHtml(m.tenNguoiDung || `User #${m.idUser}`)}
+            </label>`).join('')}
+        </div>
+
+        <hr>
+        <h6>💬 Thảo luận</h6>
+        <div id="tdComments" style="max-height:140px;overflow:auto;background:#f9f9f9;padding:8px;border-radius:6px;"></div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <input type="text" id="tdCommentInput" class="form-control" placeholder="Viết bình luận...">
+          <button type="button" class="btn btn-sm btn-primary" onclick="tdAddComment(${idTask})">Gửi</button>
+        </div>
+
+        <hr>
+        <h6>📎 Tệp đính kèm</h6>
+        <div id="tdFiles" style="max-height:120px;overflow:auto;"></div>
+        <input type="file" id="tdFileInput" style="margin-top:6px;" onchange="tdUploadFile(${idTask})">
+
+        <hr>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onclick="tdSave(${idTask})">💾 Lưu</button>
+          <button type="button" class="btn btn-warning" onclick="tdRemind(${idTask})">⏰ Nhắc nhở</button>
+          <button type="button" class="btn btn-danger" onclick="tdDelete(${idTask})">🗑️ Xóa</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  tdLoadComments(idTask);
+  tdLoadFiles(idTask);
+};
+
+window.tdSave = async function(idTask) {
+  const data = {
+    tenTask: document.getElementById('tdTenTask').value.trim(),
+    moTa: document.getElementById('tdMoTa').value.trim(),
+    deadLine: document.getElementById('tdDeadLine').value ? document.getElementById('tdDeadLine').value.replace('T', ' ') + ':00' : null,
+    trangThai: document.getElementById('tdTrangThai').value,
+    uuTien: document.getElementById('tdUuTien').value
+  };
+  if (!data.tenTask) return alert('Tên công việc không được để trống');
+  const checked = [...document.querySelectorAll('#taskDetailModal input[type=checkbox]:checked')].map((c) => Number(c.value));
+  try {
+    await updateTask(idTask, data);
+    await assignTask(idTask, checked);
+    alert('Đã lưu công việc');
+    document.getElementById('taskDetailModal')?.remove();
+    selectProject(currentProject.idDuAn);
+  } catch (e) { alert(e.message || 'Lỗi khi lưu'); }
+};
+
+window.tdDelete = async function(idTask) {
+  if (!confirm('Xóa công việc này?')) return;
+  try {
+    await deleteTask(idTask);
+    alert('Đã xóa công việc');
+    document.getElementById('taskDetailModal')?.remove();
+    selectProject(currentProject.idDuAn);
+  } catch (e) { alert(e.message || 'Lỗi khi xóa'); }
+};
+
+window.tdRemind = async function(idTask) {
+  try {
+    const r = await createTaskReminder(idTask);
+    alert(r.message || 'Đã gửi nhắc nhở');
+  } catch (e) { alert(e.message || 'Lỗi khi gửi nhắc nhở'); }
+};
+
+window.tdLoadComments = async function(idTask) {
+  const box = document.getElementById('tdComments');
+  try {
+    const list = await getTaskComments(idTask);
+    box.innerHTML = list.length
+      ? list.map((c) => `<div style="margin:4px 0;"><strong>${escapeHtml(c.tenNguoiDung)}</strong>: ${escapeHtml(c.noiDung)}</div>`).join('')
+      : '<i>Chưa có bình luận</i>';
+  } catch { box.innerHTML = '<i>Không tải được bình luận</i>'; }
+};
+
+window.tdAddComment = async function(idTask) {
+  const inp = document.getElementById('tdCommentInput');
+  const nd = inp.value.trim();
+  if (!nd) return;
+  try {
+    await addTaskComment(idTask, nd);
+    inp.value = '';
+    tdLoadComments(idTask);
+  } catch (e) { alert(e.message || 'Lỗi khi bình luận'); }
+};
+
+window.tdLoadFiles = async function(idTask) {
+  const box = document.getElementById('tdFiles');
+  try {
+    const list = await getTaskFiles(idTask);
+    box.innerHTML = list.length
+      ? list.map((f) => `<div style="margin:4px 0;"><a href="${escapeHtml(f.url)}" target="_blank">📄 ${escapeHtml(f.tenFile)}</a></div>`).join('')
+      : '<i>Chưa có tệp đính kèm</i>';
+  } catch { box.innerHTML = '<i>Không tải được tệp</i>'; }
+};
+
+window.tdUploadFile = async function(idTask) {
+  const inp = document.getElementById('tdFileInput');
+  const file = inp.files && inp.files[0];
+  if (!file) return;
+  try {
+    await uploadTaskFile(idTask, file);
+    inp.value = '';
+    tdLoadFiles(idTask);
+  } catch (e) { alert(e.message || 'Lỗi tải file'); }
+};
+window.handleSaveDriveDocument = async function () {
+  const idDuAn = currentProject?.idDuAn;
+  const so_ky_hieu = document.getElementById('docSoKyHieu')?.value.trim();
+  const tieu_de = document.getElementById('docTieuDe')?.value.trim();
+  const drive_url = document.getElementById('docDriveUrl')?.value.trim();
+  const ghi_chu = document.getElementById('docGhiChu')?.value.trim();
+
+  if (!tieu_de || !drive_url) {
+    alert('Vui lòng nhập đầy đủ Tên văn kiện và Đường dẫn Google Drive!');
+    return;
+  }
+
+  try {
+    await addProjectDocument(idDuAn, {
+      so_ky_hieu,
+      tieu_de,
+      drive_url,
+      ghi_chu
+    });
+
+    // Reset ô nhập và đóng modal
+    ['docSoKyHieu', 'docTieuDe', 'docDriveUrl', 'docGhiChu'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    closeModal('addDocumentModal');
+
+
+  } catch (err) {
+    alert(err.message || 'Không thể lưu liên kết văn kiện');
+  }
+};
 // Helper đổi màu badge theo chuẩn trạng thái task ENUM('Todo', 'Doing', 'Done')
 function getTaskStatusStyle(status) {
   if (status === 'Done') return 'background: #d4edda; color: #155724; border: 1px solid #c3e6cb;';
@@ -346,11 +668,7 @@ function initFormEvents() {
 
       try {
         if (editId) {
-          const res = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
+          const res = await createProjectNon_TT(data);
         if (res.ok) {
           closeModal('createProjectModal');
           await loadProjects();
@@ -367,8 +685,8 @@ function initFormEvents() {
           closeModal('createProjectModal');
           await loadProjects();
           if (editId) selectProject(editId);
-        } else {
-          const err = await res.json();
+        } else {  
+          const err = await res;
           alert(err.message || 'Lỗi khi lưu thông tin dự án');
         }
         }
@@ -701,6 +1019,7 @@ window.openCreateTaskModal = function() {
   }
   openModal('createTaskModal');
 };
+window.closeModal = closeModal;
 
 // Xử lý Submit Form Tạo Task
 // Submit Form Tạo Task

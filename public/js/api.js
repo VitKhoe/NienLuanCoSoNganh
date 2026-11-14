@@ -15,6 +15,20 @@ async function request(url, options) {
   }
   return response;
 }
+async function getJson(url) {
+  const token = localStorage.getItem('token') || '';
+  const res = await fetch(url, {
+    method: 'GET',
+    headers: {
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    }
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `Lỗi máy chủ (${res.status})`);
+  }
+  return data;
+}
 
 function jsonRequest(method, url, data) {
   return request(url, {
@@ -123,7 +137,55 @@ export async function updateSkill(id, data) {
 export function deleteSkill(id) {
   return request(`/api/me/skills/${id}`, { method: 'DELETE' });
 }
+// Lấy toàn bộ danh mục kỹ năng chuẩn để đổ gợi ý
+export function getAllSkillsCatalog() {
+  return getJson('/api/ky-nang');
+}
 
+// Lấy kỹ năng & chứng chỉ của user hiện tại
+export function getMyCompetency() {
+  return getJson('/api/account/nang-luc');
+}
+
+// Lưu / Cập nhật kỹ năng
+export function saveMySkill(data) {
+  return postJson('/api/account/ky-nang', data);
+}
+
+// Xóa kỹ năng khỏi hồ sơ
+export function deleteMySkill(id) {
+  return deleteJson(`/api/account/ky-nang/${id}`);
+}
+
+// Thêm / Cập nhật chứng chỉ
+export function saveMyCertification(data) {
+  return postJson('/api/account/chung-chi', data);
+}
+
+// Xóa chứng chỉ
+export function deleteMyCertification(idChungChi) {
+  return deleteJson(`/api/account/chung-chi/${idChungChi}`);
+}
+
+// Thêm / Cập nhật học vấn
+export function saveMyEducation(data) {
+  return postJson('/api/account/hoc-van', data);
+}
+
+// Xóa học vấn
+export function deleteMyEducation(id) {
+  return deleteJson(`/api/account/hoc-van/${id}`);
+}
+
+// Thêm / Cập nhật kinh nghiệm làm việc
+export function saveMyWorkExperience(data) {
+  return postJson('/api/account/kinh-nghiem', data);
+}
+
+// Xóa kinh nghiệm làm việc
+export function deleteMyWorkExperience(id) {
+  return deleteJson(`/api/account/kinh-nghiem/${id}`);
+}
 // ---------- Bài viết ----------
 // { limit, before }: before = idPost của bài cuối cùng đã có, để lấy các bài cũ hơn
 export async function fetchPosts({ limit, before } = {}) {
@@ -152,14 +214,32 @@ export async function fetchComments(idPost) {
   return response.json();
 }
 
-// data: { noiDung, idParentComment? }
+// data: { noiDung, idParentComment?, hinhAnhUrl?, hasImage? }
 export async function addComment(idPost, data) {
   const response = await postJson(`/api/posts/${idPost}/comments`, data);
   return response.json();
 }
 
-export async function updateComment(idComment, noiDung) {
-  const response = await jsonRequest('PUT', `/api/comments/${idComment}`, { noiDung });
+export async function uploadCommentImage(idComment, file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  formData.append('fileName', file.name);
+
+  const response = await fetch(`/api/comments/${idComment}/images`, {
+    method: 'POST',
+    body: formData
+  });
+
+  const result = await response.json();
+  if (!response.ok) {
+    throw new Error(result.message || `Lỗi khi tải ảnh ${file.name}`);
+  }
+  return result;
+}
+
+export async function updateComment(idComment, data) {
+  const body = typeof data === 'string' ? { noiDung: data } : data;
+  const response = await jsonRequest('PUT', `/api/comments/${idComment}`, body);
   return response.json();
 }
 
@@ -300,6 +380,34 @@ export async function fetchProjects() {
   const response = await request('/api/projects');
   return response.json();
 }
+export async function fetchProjectDocuments(idDuAn) {
+  try {
+    const res = await fetch(`/api/du-an/${idDuAn}/van-kien`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    });
+
+    if (!res.ok) return [];
+    const result = await res.json();
+    return Array.isArray(result) ? result : (result.data || []);
+  } catch (err) {
+    console.error('Lỗi khi lấy danh sách văn kiện:', err);
+    return [];
+  }
+}
+// Lấy danh sách văn kiện của một dự án
+
+
+// Thêm liên kết văn kiện Google Drive vào dự án
+export function addProjectDocument(idDuAn, data) {
+  return postJson(`/api/du-an/${idDuAn}/van-kien`, data);
+}
+
+// Gỡ/Xóa liên kết văn kiện
+export function deleteProjectDocument(vanKienId) {
+  return deleteJson(`/api/van-kien/${vanKienId}`);
+}
 
 export async function createRecruitments(idDuAn, data) {
   const response = await fetch(`/api/projects/${idDuAn}/recruitments`, {
@@ -315,6 +423,16 @@ export async function createRecruitments(idDuAn, data) {
 
   return response.json();
 }
+// Upload ảnh đại diện, trả về đường dẫn ảnh đã lưu
+export async function uploadAvatar(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const res = await fetch('/api/me/avatar', { method: 'POST', body: formData });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(result.message || 'Lỗi khi tải ảnh lên');
+  return result.avatar || result.hinhAnhUrl;
+}
+
 export async function uploadPostImage(postId, file) {
   const formData = new FormData();
   formData.append('image', file);
@@ -332,4 +450,107 @@ export async function uploadPostImage(postId, file) {
 
   // Trả về data chứa image_id và hinhAnhUrl vừa tạo thành công
   return result.data; 
+}
+
+// ---------- Công việc (Task) ----------
+export async function updateTask(idTask, data) {
+  const response = await jsonRequest('PUT', `/api/tasks/${idTask}`, data);
+  return response.json();
+}
+export async function deleteTask(idTask) {
+  const response = await request(`/api/tasks/${idTask}`, { method: 'DELETE' });
+  return response.json();
+}
+export async function assignTask(idTask, idUsers) {
+  const response = await jsonRequest('POST', `/api/tasks/${idTask}/assign`, { idUsers });
+  return response.json();
+}
+export async function getTaskComments(idTask) {
+  return getJson(`/api/tasks/${idTask}/comments`);
+}
+export async function addTaskComment(idTask, noiDung) {
+  const response = await jsonRequest('POST', `/api/tasks/${idTask}/comments`, { noiDung });
+  return response.json();
+}
+export async function getTaskFiles(idTask) {
+  return getJson(`/api/tasks/${idTask}/files`);
+}
+export async function uploadTaskFile(idTask, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`/api/tasks/${idTask}/files`, { method: 'POST', body: formData });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(result.message || 'Lỗi khi tải file');
+  return result;
+}
+export async function createTaskReminder(idTask) {
+  const response = await request(`/api/tasks/${idTask}/reminder`, { method: 'POST' });
+  return response.json();
+}
+
+// ---------- Tuyển dụng: ứng tuyển & lưu tin ----------
+export async function applyRecruitment(idTinTuyen, loiNhan) {
+  const response = await jsonRequest('POST', `/api/tin-tuyen-dung/${idTinTuyen}/apply`, { loiNhan });
+  return response.json();
+}
+export async function getApplications(idTinTuyen) {
+  return getJson(`/api/tin-tuyen-dung/${idTinTuyen}/ung-tuyen`);
+}
+export async function reviewApplication(idUngTuyen, trangThai) {
+  const response = await jsonRequest('PUT', `/api/ung-tuyen/${idUngTuyen}`, { trangThai });
+  return response.json();
+}
+export async function saveRecruitment(idTinTuyen) {
+  const response = await request(`/api/tin-tuyen-dung/${idTinTuyen}/luu`, { method: 'POST' });
+  return response.json();
+}
+export async function unsaveRecruitment(idTinTuyen) {
+  const response = await request(`/api/tin-tuyen-dung/${idTinTuyen}/luu`, { method: 'DELETE' });
+  return response.json();
+}
+
+// ---------- Thông báo & thống kê ----------
+export async function getNotifications() {
+  return getJson('/api/notifications');
+}
+export async function markNotificationRead(id) {
+  const response = await request(`/api/notifications/${id}/read`, { method: 'POST' });
+  return response.json();
+}
+export async function markAllNotificationsRead() {
+  const response = await request('/api/notifications/read-all', { method: 'POST' });
+  return response.json();
+}
+export async function getStatistics() {
+  return getJson('/api/statistics');
+}
+
+// ---------- File dự án & gợi ý ứng viên & admin ----------
+export async function getProjectFiles(idDuAn) {
+  return getJson(`/api/projects/${idDuAn}/files`);
+}
+export async function uploadProjectFile(idDuAn, file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await fetch(`/api/projects/${idDuAn}/files`, { method: 'POST', body: formData });
+  const result = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(result.message || 'Lỗi khi tải file');
+  return result;
+}
+export async function suggestCandidates(idTinTuyen) {
+  return getJson(`/api/tin-tuyen-dung/${idTinTuyen}/goi-y`);
+}
+export async function getAdminUsers() {
+  return getJson('/api/admin/users');
+}
+export async function setUserStatus(idUser, trangThai) {
+  const response = await jsonRequest('PUT', `/api/admin/users/${idUser}/status`, { trangThai });
+  return response.json();
+}
+export async function getAvatarURL(id) {
+  const response = await request(`/api/me/avatar/${id}`, {
+    method: 'GET'
+  });
+  // request(withQuery('/api/posts', { limit, before }));
+  return response.json();
 }

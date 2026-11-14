@@ -83,6 +83,7 @@ CREATE TABLE `comment` (
   `idUser` int NOT NULL,
   `idParentComment` int DEFAULT NULL,
   `noiDung` text NOT NULL,
+  `hinhAnhUrl` varchar(500) DEFAULT NULL,
   `createdAt` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`idComment`),
   KEY `idPost` (`idPost`),

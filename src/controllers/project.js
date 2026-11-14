@@ -1,6 +1,6 @@
 import db from '../models/db.js';
 import { HttpError, sendJson, readJson } from '../utils/helpers.js';
-import { requireUser } from '../utils/session.js';
+import { requireUser, getSession } from '../utils/session.js';
 import { readObject, cleanString, toId, parseLimit } from '../utils/validate.js';
 import { addMember } from './chat.js';
 

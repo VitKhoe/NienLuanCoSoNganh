@@ -220,23 +220,113 @@
 
 .comment-form {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
   margin-top: 8px;
 }
 
-.comment-form input {
+.comment-form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.comment-form input[type="text"] {
   flex: 1;
   min-width: 0;
   padding: 8px 14px;
   font: inherit;
   border: 1px solid var(--border);
   border-radius: 999px;
+  background: #fff;
+  color: inherit;
 }
 
-.comment-form input:focus {
+.comment-form input[type="text"]:focus {
   outline: none;
   border-color: var(--blue);
+}
+
+.comment-btn-img {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.comment-btn-img:hover {
+  background: #f0f2f5;
+  color: var(--blue);
+  border-color: var(--blue);
+}
+
+.comment-preview {
+  position: relative;
+  display: inline-block;
+  align-self: flex-start;
+  margin: 4px 0 2px 8px;
+}
+
+.comment-preview-img {
+  max-height: 90px;
+  max-width: 150px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  display: block;
+}
+
+.comment-preview-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s ease;
+}
+
+.comment-preview-remove:hover {
+  background: #dc3545;
+}
+
+.comment-image-box {
+  margin-top: 8px;
+}
+
+.comment-img {
+  max-height: 220px;
+  max-width: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+  border: 1px solid var(--border);
+  transition: opacity 0.2s ease;
+}
+
+.comment-img:hover {
+  opacity: 0.92;
 }
 
 .comment-hint {

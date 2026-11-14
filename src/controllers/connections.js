@@ -7,6 +7,7 @@ import db from '../models/db.js';
 import { HttpError, sendJson } from '../utils/helpers.js';
 import { requireUser } from '../utils/session.js';
 import { readObject, toId } from '../utils/validate.js';
+import { notify } from '../utils/notify.js';
 
 const PENDING = "(k.trangThai = 'Pending' OR k.trangThai IS NULL)";
 
@@ -76,6 +77,7 @@ export async function sendRequest(req, res) {
     }
     throw err;
   }
+  notify(target, 'Bạn có một lời mời kết bạn mới');
   sendJson(res, 201, { message: 'Đã gửi lời mời kết bạn' });
 }
 
@@ -94,6 +96,7 @@ export async function acceptRequest(req, res, params) {
   if (result.affectedRows === 0) {
     throw new HttpError(404, 'Không có lời mời nào từ người này');
   }
+  notify(sender, 'Lời mời kết bạn của bạn đã được chấp nhận');
   sendJson(res, 200, { message: 'Đã chấp nhận lời mời kết bạn' });
 }
 

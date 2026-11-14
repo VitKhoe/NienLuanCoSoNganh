@@ -16,16 +16,21 @@
     <nav class="navbar">
       <div class="container navbar-inner">
         <a class="navbar-brand" href="#">Switch</a>
-        <button class="navbar-toggle" id="menuToggle" type="button" aria-label="Mở menu">☰</button>
+        <button class="navbar-toggle" id="menuToggle" type="button"
+          aria-label="Mở menu">☰</button>
 
         <ul class="navbar-menu" id="menu">
           <li><a class="nav-link time-font" href="/">Trang chủ</a></li>
           <li><a class="nav-link time-font" href="/friends.html">Bạn bè</a></li>
           <li><a class="nav-link time-font" href="/chat.html">Tin nhắn</a></li>
-          <li><a class="nav-link time-font" href="/duan.html">WorkSpaces</a></li>
-          <li><a class="nav-link time-font" href="/pj_detail.html">My Projects</a></li>
-          <li><a class="nav-link time-font" href="#" id="btnLogout">Đăng xuất</a></li>
-          <li><a class="nav-link time-font" href="#" id="btnAccount">Tài khoản</a></li>
+          <li><a class="nav-link time-font"
+              href="/duan.html">WorkSpaces</a></li>
+          <li><a class="nav-link time-font" href="/pj_detail.html">My
+              Projects</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnLogout">Đăng
+              xuất</a></li>
+          <li><a class="nav-link time-font" href="#" id="btnAccount">Tài
+              khoản</a></li>
         </ul>
       </div>
     </nav>
@@ -36,19 +41,26 @@
       <!-- Thanh tiêu đề & Nút tạo dự án -->
       <header class="project-header">
         <h2>Dự án của tôi</h2>
-        <button class="btn btn-primary" id="btnOpenCreateModal" data-modal-open="createProjectModal">+ Tạo dự án mới</button>
+        <button class="btn btn-primary" id="btnOpenCreateModal"
+          data-modal-open="createProjectModal">+ Tạo dự án mới</button>
       </header>
-
+      <button id="sidebarToggleOpen" class="sidebar-toggle-open" type="button"
+        aria-label="Mở danh sách dự án" hidden>></button>
       <div class="project-layout">
         <!-- 1. Danh sách dự án (Cột trái) -->
-        <aside class="project-sidebar"> 
-          <div class="search-box">
-            <input
-              type="text"
-              id="searchProjectInput"
-              class="form-control"
-              placeholder="🔍 Tìm kiếm dự án..."
-              autocomplete="off">
+        <aside class="project-sidebar">
+          <div class="sidebar-header">
+
+            <button class="sidebar-toggle" type="button"
+              aria-label="Mở danh sách dự án">☰</button>
+            <div class="search-box">
+              <input
+                type="text"
+                id="searchProjectInput"
+                class="form-control"
+                placeholder="🔍 Tìm kiếm dự án..."
+                autocomplete="off">
+            </div>
           </div>
           <ul class="project-list" id="projectList">
             <li class="loading-text">Đang tải danh sách dự án...</li>
@@ -56,9 +68,12 @@
         </aside>
 
         <!-- 2. Chi tiết dự án (Cột phải) -->
+
         <section class="project-detail-panel" id="projectDetailPanel">
+
           <div class="empty-state">
-            <p>Vui lòng chọn một dự án từ danh sách bên trái để xem chi tiết.</p>
+            <p>Vui lòng chọn một dự án từ danh sách bên trái để xem chi
+              tiết.</p>
           </div>
         </section>
       </div>
@@ -71,23 +86,28 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-header">
           <h5 class="modal-title" id="modalProjectTitle">Tạo dự án mới</h5>
-          <button type="button" class="modal-close" aria-label="Đóng" data-modal-close="createProjectModal">&times;</button>
+          <button type="button" class="modal-close" aria-label="Đóng"
+            data-modal-close="createProjectModal">&times;</button>
         </div>
 
         <form id="formCreateProject">
-          <input type="hidden" id="editProjectId" value="">
+          <input type="hidden" id="editProjectId" value>
 
           <div class="modal-body">
-            <h6 class="section-title section-title-project">1. Thông tin dự án</h6>
+            <h6 class="section-title section-title-project">1. Thông tin dự
+              án</h6>
 
             <div class="form-group">
-              <label for="tenDuAn">Tên dự án <span class="required">*</span></label>
-              <input type="text" id="tenDuAn" class="form-control" placeholder="VD: Phân loại ảnh X-quang COVID-19" required>
+              <label for="tenDuAn">Tên dự án <span
+                  class="required">*</span></label>
+              <input type="text" id="tenDuAn" class="form-control"
+                placeholder="VD: Phân loại ảnh X-quang COVID-19" required>
             </div>
 
             <div class="form-group">
               <label for="moTa">Mô tả dự án</label>
-              <textarea id="moTa" class="form-control" rows="3" placeholder="Mô tả mục tiêu dự án..."></textarea>
+              <textarea id="moTa" class="form-control" rows="3"
+                placeholder="Mô tả mục tiêu dự án..."></textarea>
             </div>
 
             <div class="form-row">
@@ -100,7 +120,8 @@
                 <input type="date" id="ngayKT" class="form-control">
               </div>
               <div class="form-group">
-                <label for="trangThai">Trạng thái <span class="required">*</span></label>
+                <label for="trangThai">Trạng thái <span
+                    class="required">*</span></label>
                 <select id="trangThai" class="form-control">
                   <option value="not_started" selected>Chưa bắt đầu</option>
                   <option value="in_progress">Đang thực hiện</option>
@@ -111,63 +132,72 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-modal-close="createProjectModal">Hủy</button>
+            <button type="button" class="btn btn-secondary"
+              data-modal-close="createProjectModal">Hủy</button>
             <button type="submit" class="btn btn-success">Lưu dự án</button>
           </div>
         </form>
       </div>
     </div>
     <div class="modal" id="editProjectModal" hidden>
-  <div class="modal-dialog modal-lg">
-    <div class="modal-header">
-      <h5 class="modal-title">Chỉnh sửa thông tin dự án</h5>
-      <button type="button" class="modal-close" aria-label="Đóng" data-modal-close="editProjectModal">&times;</button>
+      <div class="modal-dialog modal-lg">
+        <div class="modal-header">
+          <h5 class="modal-title">Chỉnh sửa thông tin dự án</h5>
+          <button type="button" class="modal-close" aria-label="Đóng"
+            data-modal-close="editProjectModal">&times;</button>
+        </div>
+
+        <form id="formEditProject">
+          <!-- Hidden input lưu ID dự án cần sửa -->
+          <input type="hidden" id="edit_idDuAn" value>
+
+          <div class="modal-body">
+            <h6 class="section-title section-title-project">Cập nhật thông tin
+              dự án</h6>
+
+            <div class="form-group">
+              <label for="edit_tenDuAn">Tên dự án <span
+                  class="required">*</span></label>
+              <input type="text" id="edit_tenDuAn" class="form-control" required
+                placeholder="Nhập tên dự án">
+            </div>
+
+            <div class="form-group">
+              <label for="edit_moTa">Mô tả dự án</label>
+              <textarea id="edit_moTa" class="form-control" rows="3"
+                placeholder="Mô tả mục tiêu dự án..."></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit_ngayBD">Ngày bắt đầu</label>
+                <input type="date" id="edit_ngayBD" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="edit_ngayKT">Ngày kết thúc</label>
+                <input type="date" id="edit_ngayKT" class="form-control">
+              </div>
+              <div class="form-group">
+                <label for="edit_trangThai">Trạng thái <span
+                    class="required">*</span></label>
+                <select id="edit_trangThai" class="form-control">
+                  <option value="not_started">Chưa bắt đầu</option>
+                  <option value="in_progress">Đang thực hiện</option>
+                  <option value="completed">Hoàn thành</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary"
+              data-modal-close="editProjectModal">Hủy</button>
+            <button type="submit" class="btn btn-primary">Cập nhật dự
+              án</button>
+          </div>
+        </form>
+      </div>
     </div>
-
-    <form id="formEditProject">
-      <!-- Hidden input lưu ID dự án cần sửa -->
-      <input type="hidden" id="edit_idDuAn" value="">
-
-      <div class="modal-body">
-        <h6 class="section-title section-title-project">Cập nhật thông tin dự án</h6>
-
-        <div class="form-group">
-          <label for="edit_tenDuAn">Tên dự án <span class="required">*</span></label>
-          <input type="text" id="edit_tenDuAn" class="form-control" required placeholder="Nhập tên dự án">
-        </div>
-
-        <div class="form-group">
-          <label for="edit_moTa">Mô tả dự án</label>
-          <textarea id="edit_moTa" class="form-control" rows="3" placeholder="Mô tả mục tiêu dự án..."></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="edit_ngayBD">Ngày bắt đầu</label>
-            <input type="date" id="edit_ngayBD" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="edit_ngayKT">Ngày kết thúc</label>
-            <input type="date" id="edit_ngayKT" class="form-control">
-          </div>
-          <div class="form-group">
-            <label for="edit_trangThai">Trạng thái <span class="required">*</span></label>
-            <select id="edit_trangThai" class="form-control">
-              <option value="not_started">Chưa bắt đầu</option>
-              <option value="in_progress">Đang thực hiện</option>
-              <option value="completed">Hoàn thành</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-modal-close="editProjectModal">Hủy</button>
-        <button type="submit" class="btn btn-primary">Cập nhật dự án</button>
-      </div>
-    </form>
-  </div>
-</div>
     <!-- ========================================================================= -->
     <!-- MODAL 2: THÊM / CẬP NHẬT THÀNH VIÊN & PHÂN QUYỀN (Chức năng 20) -->
     <!-- ========================================================================= -->
@@ -175,21 +205,26 @@
       <div class="modal-dialog">
         <div class="modal-header">
           <h5 class="modal-title">Phân quyền thành viên</h5>
-          <button type="button" class="modal-close" data-modal-close="memberModal">&times;</button>
+          <button type="button" class="modal-close"
+            data-modal-close="memberModal">&times;</button>
         </div>
 
         <form id="memberForm">
           <div class="modal-body">
             <div class="form-group">
-              <label for="searchUserName">Tìm tên người dùng <span class="required">*</span></label>
-                <div class="user-search-container" style="position: relative;">
-                  <input type="text" id="searchUserName" class="form-control" placeholder="Gõ tên hoặc email để tìm..." autocomplete="off" required>
-                  <!-- Thẻ ẩn lưu idUser được chọn -->
-                  <input type="hidden" id="memberUserId" name="idUser">
-                  
-                  <!-- Danh sách gợi ý hiển thị bên dưới -->
-                  <ul id="userSearchResults" class="search-results-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 200px; overflow-y: auto; background: #fff; border: 1px solid #ccc; list-style: none; padding: 0; margin: 4px 0 0 0; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
-                </div>
+              <label for="searchUserName">Tìm tên người dùng <span
+                  class="required">*</span></label>
+              <div class="user-search-container" style="position: relative;">
+                <input type="text" id="searchUserName" class="form-control"
+                  placeholder="Gõ tên hoặc email để tìm..." autocomplete="off"
+                  required>
+                <!-- Thẻ ẩn lưu idUser được chọn -->
+                <input type="hidden" id="memberUserId" name="idUser">
+
+                <!-- Danh sách gợi ý hiển thị bên dưới -->
+                <ul id="userSearchResults" class="search-results-dropdown"
+                  style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 1000; max-height: 200px; overflow-y: auto; background: #fff; border: 1px solid #ccc; list-style: none; padding: 0; margin: 4px 0 0 0; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"></ul>
+              </div>
             </div>
 
             <div class="form-group">
@@ -203,90 +238,104 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-modal-close="memberModal">Hủy</button>
+            <button type="button" class="btn btn-secondary"
+              data-modal-close="memberModal">Hủy</button>
             <button type="submit" class="btn btn-primary">Xác nhận</button>
           </div>
         </form>
       </div>
     </div>
     <!-- Modal Tạo Task -->
-     <div id="createTaskModal" class="modal" hidden>
-  <div class="modal-content">
-    <h3>📌 Tạo công việc mới</h3>
-    <form id="createTaskForm">
-      <div class="form-group">
-        <label for="taskName">Tên công việc <span class="required">*</span></label>
-        <input type="text" id="taskName" class="form-control" placeholder="Nhập tên công việc..." required>
-      </div>
+    <div id="createTaskModal" class="modal" hidden>
+      <div class="modal-content">
+        <h3>📌 Tạo công việc mới</h3>
+        <form id="createTaskForm">
+          <div class="form-group">
+            <label for="taskName">Tên công việc <span
+                class="required">*</span></label>
+            <input type="text" id="taskName" class="form-control"
+              placeholder="Nhập tên công việc..." required>
+          </div>
 
-      <div class="form-group">
-        <label for="taskDeadline">Hạn chót (Deadline)</label>
-        <input type="datetime-local" id="taskDeadline" class="form-control">
-      </div>
+          <div class="form-group">
+            <label for="taskDeadline">Hạn chót (Deadline)</label>
+            <input type="datetime-local" id="taskDeadline" class="form-control">
+          </div>
 
-      <div class="form-group">
-        <label for="taskStatus">Trạng thái</label>
-        <select id="taskStatus" class="form-control">
-          <option value="Todo" selected>Todo</option>
-          <option value="Doing">Doing</option>
-          <option value="Done">Done</option>
-        </select>
-      </div>
+          <div class="form-group">
+            <label for="taskStatus">Trạng thái</label>
+            <select id="taskStatus" class="form-control">
+              <option value="Todo" selected>Todo</option>
+              <option value="Doing">Doing</option>
+              <option value="Done">Done</option>
+            </select>
+          </div>
 
-      <div class="form-group">
-        <label for="taskDesc">Mô tả</label>
-        <textarea id="taskDesc" class="form-control" rows="3" placeholder="Nhập mô tả..."></textarea>
-      </div>
+          <div class="form-group">
+            <label for="taskDesc">Mô tả</label>
+            <textarea id="taskDesc" class="form-control" rows="3"
+              placeholder="Nhập mô tả..."></textarea>
+          </div>
 
-      <div class="modal-actions">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('createTaskModal')">Hủy</button>
-        <button type="submit" class="btn btn-primary">Tạo Task</button>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary"
+              onclick="closeModal('createTaskModal')">Hủy</button>
+            <button type="submit" class="btn btn-primary">Tạo Task</button>
+          </div>
+        </form>
       </div>
-    </form>
-  </div>
-</div>
-<!-- Modal Đăng Tin Tuyển Dụng -->
-<div id="recruitmentModal" class="modal" hidden>
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3>📢 Đăng tin tuyển dụng mới</h3>
     </div>
-    
-    <form id="createRecruitmentForm">
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="recruitmentTitle">Tiêu đề tuyển dụng <span class="required" style="color: red;">*</span></label>
-          <input type="text" id="recruitmentTitle" class="form-control" placeholder="Ví dụ: Tuyển Lập trình viên Frontend React..." required>
+    <!-- Modal Đăng Tin Tuyển Dụng -->
+    <div id="recruitmentModal" class="modal" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>📢 Đăng tin tuyển dụng mới</h3>
         </div>
 
-        <div class="form-group">
-          <label for="recruitmentRequirements">Yêu cầu công việc <span class="required" style="color: red;">*</span></label>
-          <textarea id="recruitmentRequirements" class="form-control" rows="4" placeholder="Nhập chi tiết yêu cầu, kỹ năng cần có..." required></textarea>
-        </div>
+        <form id="createRecruitmentForm">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="recruitmentTitle">Tiêu đề tuyển dụng <span
+                  class="required" style="color: red;">*</span></label>
+              <input type="text" id="recruitmentTitle" class="form-control"
+                placeholder="Ví dụ: Tuyển Lập trình viên Frontend React..."
+                required>
+            </div>
 
-        <div class="form-group">
-          <label for="recruitmentDeadline">Hạn nộp hồ sơ</label>
-          <input type="date" id="recruitmentDeadline" class="form-control">
-        </div>
+            <div class="form-group">
+              <label for="recruitmentRequirements">Yêu cầu công việc <span
+                  class="required" style="color: red;">*</span></label>
+              <textarea id="recruitmentRequirements" class="form-control"
+                rows="4" placeholder="Nhập chi tiết yêu cầu, kỹ năng cần có..."
+                required></textarea>
+            </div>
 
-        <div class="form-group">
-          <label for="recruitmentStatus">Trạng thái tin</label>
-          <select id="recruitmentStatus" class="form-control">
-            <option value="not_started" selected>Chưa bắt đầu (not_started)</option>
-            <option value="in_progress">Đang tuyển (in_progress)</option>
-            <option value="completed">Đã đóng (completed)</option>
-          </select>
-        </div>
+            <div class="form-group">
+              <label for="recruitmentDeadline">Hạn nộp hồ sơ</label>
+              <input type="date" id="recruitmentDeadline" class="form-control">
+            </div>
+
+            <div class="form-group">
+              <label for="recruitmentStatus">Trạng thái tin</label>
+              <select id="recruitmentStatus" class="form-control">
+                <option value="not_started" selected>Chưa bắt đầu
+                  (not_started)</option>
+                <option value="in_progress">Đang tuyển (in_progress)</option>
+                <option value="completed">Đã đóng (completed)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-actions"
+            style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px;">
+            <button type="button" class="btn btn-secondary"
+              onclick="closeModal('recruitmentModal')">Hủy</button>
+            <button type="submit" class="btn btn-primary">➕ Đăng tin</button>
+          </div>
+        </form>
       </div>
-
-      <div class="modal-actions" style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 8px;">
-        <button type="button" class="btn btn-secondary" onclick="closeModal('recruitmentModal')">Hủy</button>
-        <button type="submit" class="btn btn-primary">➕ Đăng tin</button>
-      </div>
-    </form>
-  </div>
-</div>
-<!-- Modal Tạo Task Pure -->
+    </div>
+    <!-- Modal Tạo Task Pure -->
 
     <!-- ========================================================================= -->
     <!-- MODAL 3: ĐÁNH GIÁ THÀNH VIÊN (Chức năng 23) -->
@@ -295,14 +344,16 @@
       <div class="modal-dialog">
         <div class="modal-header">
           <h5 class="modal-title">Đánh giá thành viên</h5>
-          <button type="button" class="modal-close" data-modal-close="reviewModal">&times;</button>
+          <button type="button" class="modal-close"
+            data-modal-close="reviewModal">&times;</button>
         </div>
 
         <form id="reviewForm">
-          <input type="hidden" id="reviewTargetUserId" value="">
+          <input type="hidden" id="reviewTargetUserId" value>
 
           <div class="modal-body">
-            <p>Đánh giá cho thành viên: <strong id="reviewTargetUserName">---</strong></p>
+            <p>Đánh giá cho thành viên: <strong
+                id="reviewTargetUserName">---</strong></p>
 
             <div class="form-group">
               <label for="reviewScore">Điểm đánh giá (1 - 5 sao):</label>
@@ -317,18 +368,109 @@
 
             <div class="form-group">
               <label for="reviewComment">Nhận xét / Đánh giá:</label>
-              <textarea id="reviewComment" class="form-control" rows="3" placeholder="Nhập ý kiến đánh giá..."></textarea>
+              <textarea id="reviewComment" class="form-control" rows="3"
+                placeholder="Nhập ý kiến đánh giá..."></textarea>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-modal-close="reviewModal">Hủy</button>
+            <button type="button" class="btn btn-secondary"
+              data-modal-close="reviewModal">Hủy</button>
             <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
           </div>
         </form>
       </div>
     </div>
+    <!--modal thêm văn kiện -->
+    <!-- Modal Gắn link Google Drive -->
 
+
+      <div class="modal" id="addDocumentModal" hidden>
+        <div class="modal-dialog">
+
+          <div class="modal-header">
+            <h5 class="modal-title">📂 Gắn liên kết văn kiện Google Drive</h5>
+            <button type="button"
+              class="modal-close"
+              data-modal-close="addDocumentModal">
+              &times;
+            </button>
+          </div>
+
+          <form id="addDocumentForm">
+
+            <div class="modal-body">
+
+              <div class="form-group">
+                <label for="docSoKyHieu">Số ký hiệu</label>
+                <input
+                  type="text"
+                  id="docSoKyHieu"
+                  class="form-control"
+                  placeholder="VD: 01/QĐ-DA">
+              </div>
+
+              <div class="form-group">
+                <label for="docTieuDe">
+                  Tên văn kiện <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="docTieuDe"
+                  class="form-control"
+                  placeholder="Nhập tên hoặc trích yếu văn kiện..."
+                  required>
+              </div>
+
+              <div class="form-group">
+                <label for="docDriveUrl">
+                  Đường dẫn Google Drive <span class="text-danger">*</span>
+                </label>
+                <input
+                  type="url"
+                  id="docDriveUrl"
+                  class="form-control"
+                  placeholder="https://drive.google.com/..."
+                  required>
+
+                <small class="form-text text-muted">
+                  * Lưu ý: Bật quyền
+                  <b>"Bất kỳ ai có đường liên kết đều có thể xem"</b>
+                  trên Google Drive để thành viên dự án mở được.
+                </small>
+              </div>
+
+              <div class="form-group">
+                <label for="docGhiChu">Ghi chú</label>
+                <textarea
+                  id="docGhiChu"
+                  class="form-control"
+                  rows="3"
+                  placeholder="Ghi chú thêm (không bắt buộc)"></textarea>
+              </div>
+
+            </div>
+
+            <div class="modal-footer">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                data-modal-close="addDocumentModal">
+                Hủy
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="handleSaveDriveDocument()">
+                💾 Lưu liên kết
+              </button>
+            </div>
+
+          </form>
+
+        </div>
+      </div>
     <!-- Script khởi tạo dự án -->
     <script type="module" src="/js/pj_detail.js"></script>
 

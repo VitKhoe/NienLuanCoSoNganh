@@ -2,6 +2,7 @@
 
 import {
   fetchPosts,
+  fetchJobs,
   createPost,
   likePost,
   unlikePost,
@@ -13,11 +14,13 @@ import {
   ApiError,
   errorMessage,
   bookMark,
-  unMark
+  unMark,
+  getAvatarURL
 } from './api.js';
 import { escapeHtml, formatDateTime, closeModal } from './ui.js';
 import { loadRelations } from './relations.js';
 import { toggleComments } from './comments.js';
+import { renderJob } from './recruitments.js';
 
 const PAGE_SIZE = 10; // số bài tải mỗi lần
 
@@ -46,19 +49,28 @@ function toolsHtml(idUser) {
   return `${friendPart}
     <button type="button" class="btn btn-outline-success btn-sm" data-action="message">Nhắn tin</button>`;
 }
+function renderAvatar(avatar, name) {
+  const textContent = (name || '?').trim().charAt(0).toUpperCase();
+  console.log(avatar);
+  // Chỉ tải ảnh khi là URL hợp lệ (http/https) hoặc đường dẫn uploads;
+  // bỏ qua tên file placeholder như "link_avatar_admin.jpg" để tránh lỗi 404.
+  if (!avatar || !/^(https?:\/\/|\/uploads\/)/i.test(avatar)) return;
+  try{
+    const img = '<img alt="Avatar" src="' + avatar + '">';
+    console.log(img);
+    return img;
+  }catch (error){
+    console.log("looix", error);
+    return textContent;
+  }
+}
+
 
 function renderPost(post) {
-  const initial = (post.tenTacGia || '?').trim().charAt(0).toUpperCase();
-  let imageIds = [];
-  if (post.imageIds) {
-    if (typeof post.imageIds === 'string') {
-      imageIds = post.imageIds.split(',').map(id => id.trim()).filter(Boolean);
-    } else if (Array.isArray(post.imageIds)) {
-      imageIds = post.imageIds;
-    }
-  } else if (Array.isArray(post.images)) {
-    imageIds = post.images;
-  }
+
+  let imageIds = post.imageIds?.split(",").map(Number) || [];
+  const avatarUrl = post.avatar;
+  let initial = renderAvatar(avatarUrl) || (post.tenTacGia || '?').trim().charAt(0).toUpperCase() ;
   // 1. Render danh sách ảnh nếu mảng post.imageIds có dữ liệu
   let imagesHtml = '';
   if (Array.isArray(imageIds) && imageIds.length > 0) {
@@ -79,13 +91,13 @@ function renderPost(post) {
         ${imgTags}
       </div>`;
   }
-
+  
   // 2. Tra vè HTML hoàn chỉnh của bài viết
   return `
     <article class="card post" data-id="${post.idPost}" data-user="${post.idUser}">
       <div class="card-body">
         <div class="post-header">
-          <div class="avatar">${escapeHtml(initial)}</div>
+          <div class="avatar">${initial}</div>
           <div class="post-meta">
             <h6 class="post-author">${escapeHtml(post.tenTacGia)}</h6>
             <small class="text-muted">${formatDateTime(post.createdAt)}</small>
@@ -117,6 +129,7 @@ function renderPost(post) {
         <div class="comments" data-role="comments" hidden></div>
       </div>
     </article>`;
+
 } 
 
 function moreHtml(posts) {
@@ -157,14 +170,24 @@ export async function loadPosts() {
 
   try {
     await loadContext();
-    const posts = await fetchPosts({ limit: PAGE_SIZE });
+    const [posts, jobs] = await Promise.all([
+      fetchPosts({ limit: 100 }),
+      fetchJobs().catch(() => []),
+    ]);
 
-    if (!posts || posts.length === 0) {
-      container.innerHTML = '<p class="empty-text">Chưa có bài viết nào.</p>';
+    if ((!posts || posts.length === 0) && (!jobs || jobs.length === 0)) {
+      container.innerHTML = '<p class="empty-text">Chưa có bài đăng hay tin tuyển dụng nào.</p>';
       return;
     }
-    container.innerHTML = posts.map(renderPost).join('') + moreHtml(posts);
-    oldestId = posts[posts.length - 1].idPost;
+
+    // Gộp bài viết + tin tuyển dụng, sắp xếp theo thời gian đăng (mới nhất trước)
+    const items = [
+      ...(posts || []).map((p) => ({ time: new Date(p.createdAt || 0).getTime(), html: renderPost(p) })),
+      ...(jobs || []).map((j) => ({ time: new Date(j.created_at || 0).getTime(), html: renderJob(j) })),
+    ].sort((a, b) => b.time - a.time);
+
+    container.innerHTML = items.map((i) => i.html).join('');
+    if (posts && posts.length > 0) oldestId = posts[posts.length - 1].idPost;
   } catch (error) {
     console.error('Lỗi khi tải danh sách bài viết:', error);
     container.innerHTML = `

@@ -4,6 +4,7 @@ import db from '../models/db.js';
 import { HttpError, sendJson } from '../utils/helpers.js';
 import { getSession, requireUser } from '../utils/session.js';
 import { readObject, cleanString, toId, parseLimit, parseCursor } from '../utils/validate.js';
+import { notify } from '../utils/notify.js';
 
 // "like" là từ khóa của SQL nên tên bảng phải đặt trong dấu backtick
 const LIKE = '`Likepost`';
@@ -12,7 +13,7 @@ const MAX_POST_LENGTH = 5000;
 const MAX_COMMENT_LENGTH = 2000;
 
 // Người đang đăng nhập (0 nếu chưa đăng nhập - dùng cho API công khai)
-function currentUserId(req) {
+function currentUserId(req){
   return getSession(req)?.idUser ?? 0;
 }
 
@@ -30,7 +31,7 @@ const POST_SELECT = `
          (SELECT COUNT(*) FROM comment c WHERE c.idPost = p.idPost) AS soBinhLuan,
          (SELECT COUNT(*) FROM ${LIKE} l2 WHERE l2.idPost = p.idPost AND l2.idUser = ?) AS daLike,
          EXISTS(SELECT 1 FROM bookmarks b WHERE b.post_id = p.idPost AND b.user_id = ?) AS daMark,
-         (SELECT GROUP_CONCAT(i.image_id ORDER BY i.image_id ASC) FROM image i WHERE i.post_id = p.idPost) AS imageIds
+         (SELECT GROUP_CONCAT(i.image_id ORDER BY i.image_id ASC) FROM image i WHERE i.post_id = p.idPost AND i.forWhat = ?) AS imageIds
   FROM post p
   JOIN user u ON u.idUser = p.idUser
   LEFT JOIN hoso h ON h.idUser = p.idUser`;
@@ -98,7 +99,7 @@ export async function getPosts(req, res, params, query = new URLSearchParams()) 
      WHERE (? IS NULL OR p.idPost < ?)
      ORDER BY p.idPost DESC
      LIMIT ?`,
-    [currentUserId(req),currentUserId(req), before, before, limit]
+    [currentUserId(req),currentUserId(req),0, before, before, limit]
   );
   sendJson(res, 200, rows.map(formatPost));
 }
@@ -106,7 +107,7 @@ export async function getPosts(req, res, params, query = new URLSearchParams()) 
 // GET /api/posts/:id
 export async function getPost(req, res, params) {
   const [rows] = await db.query(`${POST_SELECT} WHERE p.idPost = ?`, [
-    currentUserId(req),currentUserId(req),
+    currentUserId(req),currentUserId(req),0,
     Number(params.id)
   ]);
   if (rows.length === 0) {
@@ -137,6 +138,10 @@ export async function likePost(req, res, params) {
      WHERE NOT EXISTS (SELECT 1 FROM ${LIKE} WHERE idPost = ? AND idUser = ?)`,
     [idPost, idUser, idPost, idUser]
   );
+  const [ownerRows] = await db.query('SELECT idUser FROM post WHERE idPost = ?', [idPost]);
+  if (ownerRows.length && ownerRows[0].idUser !== idUser) {
+    notify(ownerRows[0].idUser, 'Ai đó vừa thích bài viết của bạn');
+  }
   sendJson(res, 200, { daLike: true, soLike: await countLikes(idPost) });
 }
 
@@ -155,27 +160,42 @@ export async function unlikePost(req, res, params) {
 // =========================================================================
 
 const COMMENT_SELECT = `
-  SELECT c.idComment, c.idPost, c.idUser, c.idParentComment, c.noiDung, c.createdAt,
+  SELECT c.idComment, c.idPost, c.idUser, c.idParentComment, c.noiDung, c.hinhAnhUrl, c.createdAt,
          COALESCE(NULLIF(h.HovaTen, ''), u.userName) AS tenNguoiBinhLuan,
          h.avatar
   FROM comment c
   JOIN user u ON u.idUser = c.idUser
   LEFT JOIN hoso h ON h.idUser = c.idUser`;
 
-function readCommentText(value) {
+function readCommentText(value, allowEmpty = false) {
   const noiDung = cleanString(value);
-  if (!noiDung) {
+  if (!noiDung && !allowEmpty) {
     throw new HttpError(400, 'Nội dung bình luận không được để trống');
   }
-  if (noiDung.length > MAX_COMMENT_LENGTH) {
+  if (noiDung && noiDung.length > MAX_COMMENT_LENGTH) {
     throw new HttpError(400, `Bình luận tối đa ${MAX_COMMENT_LENGTH} ký tự`);
   }
-  return noiDung;
+  return noiDung || '';
 }
 
 async function getComment(idComment) {
-  const [rows] = await db.query(`${COMMENT_SELECT} WHERE c.idComment = ?`, [idComment]);
-  return rows[0];
+  try {
+    const [rows] = await db.query(`${COMMENT_SELECT} WHERE c.idComment = ?`, [idComment]);
+    return rows[0];
+  } catch (err) {
+    if (err.code === 'ER_BAD_FIELD_ERROR' || err.errno === 1054) {
+      const fallbackSelect = `
+        SELECT c.idComment, c.idPost, c.idUser, c.idParentComment, c.noiDung, NULL AS hinhAnhUrl, c.createdAt,
+               COALESCE(NULLIF(h.HovaTen, ''), u.userName) AS tenNguoiBinhLuan,
+               h.avatar
+        FROM comment c
+        JOIN user u ON u.idUser = c.idUser
+        LEFT JOIN hoso h ON h.idUser = c.idUser`;
+      const [rows] = await db.query(`${fallbackSelect} WHERE c.idComment = ?`, [idComment]);
+      return rows[0];
+    }
+    throw err;
+  }
 }
 
 // Lấy bình luận và bảo đảm nó thuộc về người đang đăng nhập
@@ -194,17 +214,39 @@ export async function getComments(req, res, params) {
   const idPost = Number(params.id);
   await assertPostExists(idPost);
 
-  const [rows] = await db.query(`${COMMENT_SELECT} WHERE c.idPost = ? ORDER BY c.idComment`, [idPost]);
-  sendJson(res, 200, rows);
+  try {
+    const [rows] = await db.query(`${COMMENT_SELECT} WHERE c.idPost = ? ORDER BY c.idComment`, [idPost]);
+    sendJson(res, 200, rows);
+  } catch (err) {
+    if (err.code === 'ER_BAD_FIELD_ERROR' || err.errno === 1054) {
+      const fallbackSelect = `
+        SELECT c.idComment, c.idPost, c.idUser, c.idParentComment, c.noiDung, NULL AS hinhAnhUrl, c.createdAt,
+               COALESCE(NULLIF(h.HovaTen, ''), u.userName) AS tenNguoiBinhLuan,
+               h.avatar
+        FROM comment c
+        JOIN user u ON u.idUser = c.idUser
+        LEFT JOIN hoso h ON h.idUser = c.idUser`;
+      const [rows] = await db.query(`${fallbackSelect} WHERE c.idPost = ? ORDER BY c.idComment`, [idPost]);
+      sendJson(res, 200, rows);
+    } else {
+      throw err;
+    }
+  }
 }
 
-// POST /api/posts/:id/comments   body: { noiDung, idParentComment? }
+// POST /api/posts/:id/comments   body: { noiDung, idParentComment?, hinhAnhUrl?, hasImage? }
 export async function addComment(req, res, params) {
   const idUser = requireUser(req);
   const idPost = Number(params.id);
   const data = await readObject(req);
-  const noiDung = readCommentText(data.noiDung);
+  const hinhAnhUrl = cleanString(data.hinhAnhUrl) || null;
+  const hasImage = Boolean(hinhAnhUrl || data.hasImage);
+  const noiDung = readCommentText(data.noiDung, hasImage);
   await assertPostExists(idPost);
+  const [ownerRows] = await db.query('SELECT idUser FROM post WHERE idPost = ?', [idPost]);
+  if (ownerRows.length && ownerRows[0].idUser !== idUser) {
+    notify(ownerRows[0].idUser, 'Ai đó vừa bình luận bài viết của bạn');
+  }
 
   // Trả lời một bình luận khác: bình luận gốc phải cùng bài viết
   let idParentComment = null;
@@ -219,25 +261,72 @@ export async function addComment(req, res, params) {
     }
   }
 
-  const [result] = await db.query(
-    'INSERT INTO comment (idPost, idUser, idParentComment, noiDung) VALUES (?, ?, ?, ?)',
-    [idPost, idUser, idParentComment, noiDung]
-  );
+  let result;
+  try {
+    [result] = await db.query(
+      'INSERT INTO comment (idPost, idUser, idParentComment, noiDung, hinhAnhUrl) VALUES (?, ?, ?, ?, ?)',
+      [idPost, idUser, idParentComment, noiDung, hinhAnhUrl]
+    );
+  } catch (err) {
+    if (err.code === 'ER_BAD_FIELD_ERROR' || err.errno === 1054) {
+      try {
+        await db.query('ALTER TABLE comment ADD COLUMN hinhAnhUrl VARCHAR(500) DEFAULT NULL');
+        [result] = await db.query(
+          'INSERT INTO comment (idPost, idUser, idParentComment, noiDung, hinhAnhUrl) VALUES (?, ?, ?, ?, ?)',
+          [idPost, idUser, idParentComment, noiDung, hinhAnhUrl]
+        );
+      } catch {
+        [result] = await db.query(
+          'INSERT INTO comment (idPost, idUser, idParentComment, noiDung) VALUES (?, ?, ?, ?)',
+          [idPost, idUser, idParentComment, noiDung]
+        );
+      }
+    } else {
+      throw err;
+    }
+  }
+
   sendJson(res, 201, await getComment(result.insertId));
 }
 
-// PUT /api/comments/:id   body: { noiDung }
+// PUT /api/comments/:id   body: { noiDung, hinhAnhUrl? }
 export async function updateComment(req, res, params) {
   const idUser = requireUser(req);
   const idComment = Number(params.id);
-  const noiDung = readCommentText((await readObject(req)).noiDung);
+  const body = await readObject(req);
   await getOwnComment(idComment, idUser);
 
-  await db.query('UPDATE comment SET noiDung = ? WHERE idComment = ? AND idUser = ?', [
-    noiDung,
-    idComment,
-    idUser
-  ]);
+  const hasImage = body.hinhAnhUrl !== undefined ? Boolean(body.hinhAnhUrl) : true;
+  const noiDung = readCommentText(body.noiDung, hasImage);
+
+  if (body.hinhAnhUrl !== undefined) {
+    const hinhAnhUrl = cleanString(body.hinhAnhUrl) || null;
+    try {
+      await db.query('UPDATE comment SET noiDung = ?, hinhAnhUrl = ? WHERE idComment = ? AND idUser = ?', [
+        noiDung,
+        hinhAnhUrl,
+        idComment,
+        idUser
+      ]);
+    } catch (err) {
+      if (err.code === 'ER_BAD_FIELD_ERROR' || err.errno === 1054) {
+        await db.query('UPDATE comment SET noiDung = ? WHERE idComment = ? AND idUser = ?', [
+          noiDung,
+          idComment,
+          idUser
+        ]);
+      } else {
+        throw err;
+      }
+    }
+  } else {
+    await db.query('UPDATE comment SET noiDung = ? WHERE idComment = ? AND idUser = ?', [
+      noiDung,
+      idComment,
+      idUser
+    ]);
+  }
+
   sendJson(res, 200, await getComment(idComment));
 }
 

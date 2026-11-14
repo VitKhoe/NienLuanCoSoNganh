@@ -232,14 +232,14 @@ export function renderProjectDetail(projectData) {
   if (!isMember) {
     const btnJoin = document.getElementById('btnRequestJoinProject');
     if (btnJoin) {
-      btnJoin.addEventListener('click', async(p) => {
-        if (!confirm(`Bạn muốn gửi yêu cầu tham gia dự án "${p.tenDuAn}"?`)) return;
+      btnJoin.addEventListener('click', async() => {
+        if (!confirm(`Bạn muốn gửi yêu cầu tham gia dự án "${projectData.tenDuAn}"?`)) return;
 
         try {
           btnJoin.disabled = true;
           btnJoin.textContent = '⏳ Đang gửi...';
 
-          const res = await fetch(`/api/projects/${p.idDuAn}/join-request`, {
+          const res = await fetch(`/api/projects/${projectData.idDuAn}/join-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
           });
@@ -279,6 +279,7 @@ export async function initProjectModule() {
       const projectId = projectItem.dataset.id;
       const projectData = await getProjectDetail(projectId);
       if(!projectData) return;
+      console.log('Chi tiết dự án:', projectData);
       renderProjectDetail(projectData);
     });
 

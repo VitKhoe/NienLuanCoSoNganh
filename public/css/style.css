@@ -163,6 +163,13 @@ body.modal-open {
   background: var(--blue);
   border-radius: 50%;
 }
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Giữ đúng tỷ lệ ảnh, không bị kéo giãn */
+  display: block;
+  border-radius: 50%;
+}
 
 .post-author {
   margin: 0;

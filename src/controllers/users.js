@@ -46,7 +46,7 @@ function createProfile(idUser, userName) {
 // Lấy hồ sơ của user, chưa có thì tạo (tài khoản cũ có thể chưa có hồ sơ)
 async function getOrCreateProfile(idUser) {
   const sql = `
-    SELECT u.idUser, u.userName, u.email, h.idHoSo, h.HovaTen, h.avatar, h.tieuSu, h.SDT
+    SELECT u.idUser, u.userName, u.email, u.QuyenCSDL, h.idHoSo, h.HovaTen, h.avatar, h.anhBia, h.tieuSu, h.SDT
     FROM user u
     LEFT JOIN hoso h ON h.idUser = u.idUser
     WHERE u.idUser = ?`;
@@ -68,8 +68,10 @@ function toProfileJson(row) {
     idUser: row.idUser,
     userName: row.userName,
     email: row.email,
+    isAdmin: row.QuyenCSDL === 'rwxrwxrwx',
     HovaTen: row.HovaTen,
     avatar: row.avatar,
+    anhBia: row.anhBia,
     tieuSu: row.tieuSu,
     SDT: row.SDT
   };
@@ -186,6 +188,7 @@ export async function updateProfile(req, res) {
 
   const HovaTen = cleanString(data.HovaTen);
   const avatar = cleanString(data.avatar) || null;
+  const anhBia = cleanString(data.anhBia) || null;
   const tieuSu = cleanString(data.tieuSu) || null;
   const SDT = cleanString(data.SDT);
 
@@ -194,6 +197,9 @@ export async function updateProfile(req, res) {
   }
   if (avatar && avatar.length > 500) {
     throw new HttpError(400, 'Đường dẫn avatar tối đa 500 ký tự');
+  }
+  if (anhBia && anhBia.length > 500) {
+    throw new HttpError(400, 'Đường dẫn ảnh bìa tối đa 500 ký tự');
   }
   if (tieuSu && tieuSu.length > 2000) {
     throw new HttpError(400, 'Tiểu sử tối đa 2000 ký tự');
@@ -204,8 +210,8 @@ export async function updateProfile(req, res) {
 
   await getOrCreateProfile(idUser); // bảo đảm đã có hồ sơ để cập nhật
   await db.query(
-    'UPDATE hoso SET HovaTen = ?, avatar = ?, tieuSu = ?, SDT = ? WHERE idUser = ?',
-    [HovaTen, avatar, tieuSu, SDT, idUser]
+    'UPDATE hoso SET HovaTen = ?, avatar = ?, anhBia = ?, tieuSu = ?, SDT = ? WHERE idUser = ?',
+    [HovaTen, avatar, anhBia, tieuSu, SDT, idUser]
   );
 
   sendJson(res, 200, toProfileJson(await getOrCreateProfile(idUser)));
